@@ -865,6 +865,7 @@ body {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   gap: 16px; z-index: 20; text-align: center; padding: 20px;
 }
+.danger { color: #f43f5e; }
 .hidden { display: none !important; }
 button {
   background: linear-gradient(90deg, #00f3ff, #0077ff); border: none; padding: 12px 28px;
@@ -878,237 +879,366 @@ button:hover { transform: scale(1.05); }</code></pre>
             <button onclick="copyTabCode('code-js-content')" class="absolute right-4 top-4 px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition z-10">
               Копировать game.js
             </button>
-            <pre class="overflow-x-auto text-xs text-cyan-200"><code id="code-js-content">// ПОЛНЫЙ ДВИЖОК ИГРЫ ЗВЁЗДНЫЙ ЗАЩИТНИК (1-В-1)
+            <pre class="overflow-x-auto text-xs text-cyan-200"><code id="code-js-content">// ПОЛНЫЙ ДВИЖОК ИГРЫ «ЗВЁЗДНЫЙ ЗАЩИТНИК» (1-В-1)
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Элементы интерфейса (строго соответствуют id в index.html)
+const scoreEl = document.getElementById('score');
+const shieldBarEl = document.getElementById('shield-bar');
+const laserModeEl = document.getElementById('laser-mode');
+const startScreen = document.getElementById('startScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const finalScoreEl = document.getElementById('finalScore');
+const finalRecordEl = document.getElementById('finalRecord');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+
 let score = 0, shield = 100, laserMode = 'SINGLE', laserTimer = 0;
 let gameOver = false, isRunning = false;
-let shakeTime = 0;
+let shakeTime = 0, lastShot = 0;
 
+// Обработка клавиатуры (блокируем прокрутку и повторное нажатие кнопок Пробелом)
 const keys = {};
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
+window.addEventListener('keydown', e =&gt; {
+  if (['Space', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+    e.preventDefault();
+  }
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', e =&gt; {
+  keys[e.code] = false;
+});
 
 // Звёздный параллакс
-const stars = Array.from({ length: 80 }, () => ({
+const stars = Array.from({ length: 90 }, () =&gt; ({
   x: Math.random() * canvas.width,
   y: Math.random() * canvas.height,
   size: Math.random() * 2 + 0.5,
-  speed: Math.random() * 1.5 + 0.5
+  speed: Math.random() * 1.5 + 0.5,
+  alpha: Math.random() * 0.8 + 0.2
 }));
 
-// Корабль игрока
-const player = { x: canvas.width / 2, y: canvas.height - 60, speed: 6 };
+// Корабль игрока и массивы сущностей
+const player = { x: canvas.width / 2, y: canvas.height - 65, speed: 6.5 };
 let bullets = [], asteroids = [], bonuses = [], particles = [];
 
 // Звуковой синтезатор Web Audio API
 function playSound(type) {
   try {
-    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const actx = new AudioCtx();
     const osc = actx.createOscillator();
     const gain = actx.createGain();
-    osc.connect(gain); gain.connect(actx.destination);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+
     if (type === 'laser') {
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(750, actx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(150, actx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, actx.currentTime);
-      osc.start(); osc.stop(actx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(800, actx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, actx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.12, actx.currentTime);
+      osc.start();
+      osc.stop(actx.currentTime + 0.1);
     } else if (type === 'explode') {
       osc.type = 'square';
-      osc.frequency.setValueAtTime(120, actx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(30, actx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.2, actx.currentTime);
-      osc.start(); osc.stop(actx.currentTime + 0.2);
+      osc.frequency.setValueAtTime(140, actx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(35, actx.currentTime + 0.22);
+      gain.gain.setValueAtTime(0.18, actx.currentTime);
+      osc.start();
+      osc.stop(actx.currentTime + 0.22);
+    } else if (type === 'bonus') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, actx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(900, actx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.15, actx.currentTime);
+      osc.start();
+      osc.stop(actx.currentTime + 0.18);
     }
-  } catch(e) {}
+  } catch (e) {}
+}
+
+// Фабрика процедурных астероидов (используется и для спавна, и для осколков)
+function createAsteroid(x, y, radius, speed) {
+  const points = 8 + Math.floor(Math.random() * 4);
+  const offset = [];
+  for (let i = 0; i &lt; points; i++) {
+    offset.push(radius + (Math.random() * (radius * 0.35) - radius * 0.175));
+  }
+  return {
+    x, y, radius, points, offset,
+    speed: speed || Math.random() * 2.2 + 1.6,
+    angle: 0,
+    rotSpeed: Math.random() * 0.04 - 0.02
+  };
 }
 
 function spawnAsteroid() {
-  const radius = Math.random() > 0.5 ? 35 : 20;
-  const points = 8 + Math.floor(Math.random() * 4);
-  const offset = [];
-  for(let i = 0; i < points; i++) offset.push(radius + (Math.random() * 10 - 5));
-  asteroids.push({
-    x: Math.random() * (canvas.width - 60) + 30,
-    y: -40, radius, points, offset,
-    speed: Math.random() * 2 + 1.5,
-    angle: 0, rotSpeed: Math.random() * 0.04 - 0.02
-  });
+  const radius = Math.random() &gt; 0.45 ? 36 : 22;
+  const x = Math.random() * (canvas.width - 80) + 40;
+  asteroids.push(createAsteroid(x, -50, radius));
 }
 
 function shoot() {
   playSound('laser');
   if (laserMode === 'SINGLE') {
-    bullets.push({ x: player.x, y: player.y - 20, vx: 0, vy: -10 });
+    bullets.push({ x: player.x, y: player.y - 24, vx: 0, vy: -11 });
   } else {
-    bullets.push({ x: player.x - 10, y: player.y - 15, vx: -2, vy: -10 });
-    bullets.push({ x: player.x, y: player.y - 20, vx: 0, vy: -10 });
-    bullets.push({ x: player.x + 10, y: player.y - 15, vx: 2, vy: -10 });
+    bullets.push({ x: player.x - 12, y: player.y - 18, vx: -2.2, vy: -10 });
+    bullets.push({ x: player.x, y: player.y - 24, vx: 0, vy: -11 });
+    bullets.push({ x: player.x + 12, y: player.y - 18, vx: 2.2, vy: -10 });
   }
 }
 
-let lastShot = 0;
+function startGame() {
+  score = 0;
+  shield = 100;
+  laserMode = 'SINGLE';
+  laserTimer = 0;
+  gameOver = false;
+  isRunning = true;
+  shakeTime = 0;
+  bullets = [];
+  asteroids = [];
+  bonuses = [];
+  particles = [];
+  player.x = canvas.width / 2;
+
+  scoreEl.innerText = '0';
+  shieldBarEl.style.width = '100%';
+  laserModeEl.innerText = 'ОДИНАРНЫЙ';
+  startScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+  startBtn.blur();
+  restartBtn.blur();
+}
+
 function update() {
   if (!isRunning || gameOver) return;
 
-  // Игрок
-  if ((keys['ArrowLeft'] || keys['KeyA']) && player.x > 30) player.x -= player.speed;
-  if ((keys['ArrowRight'] || keys['KeyD']) && player.x < canvas.width - 30) player.x += player.speed;
-  
-  if (keys['Space'] && Date.now() - lastShot > 150) {
-    shoot(); lastShot = Date.now();
+  // Движение корабля
+  if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+  player.x = Math.max(30, Math.min(canvas.width - 30, player.x));
+
+  // Стрельба
+  if (keys['Space'] &amp;&amp; Date.now() - lastShot &gt; 140) {
+    shoot();
+    lastShot = Date.now();
   }
 
-  // Лазерный таймер
-  if (laserTimer > 0) {
+  // Таймер тройного лазера
+  if (laserTimer &gt; 0) {
     laserTimer--;
     if (laserTimer === 0) {
       laserMode = 'SINGLE';
-      document.getElementById('hud-laser').innerText = 'ОДИНАРНЫЙ';
+      laserModeEl.innerText = 'ОДИНАРНЫЙ';
     }
   }
 
   // Звёзды
-  stars.forEach(s => { s.y += s.speed; if (s.y > canvas.height) s.y = 0; });
+  stars.forEach(s =&gt; {
+    s.y += s.speed;
+    if (s.y &gt; canvas.height) s.y = 0;
+  });
 
   // Пули
-  bullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
-  bullets = bullets.filter(b => b.y > 0);
+  bullets.forEach(b =&gt; { b.x += b.vx; b.y += b.vy; });
+  bullets = bullets.filter(b =&gt; b.y &gt; -20);
 
   // Спавн астероидов
-  if (Math.random() < 0.025) spawnAsteroid();
+  if (Math.random() &lt; 0.028) spawnAsteroid();
 
-  // Обновление астероидов
-  asteroids.forEach(ast => {
+  // Обновление астероидов и столкновение с игроком
+  asteroids.forEach(ast =&gt; {
     ast.y += ast.speed;
     ast.angle += ast.rotSpeed;
 
-    // Столкновение с игроком
-    if (Math.hypot(ast.x - player.x, ast.y - player.y) < ast.radius + 15) {
-      shield -= 25;
-      shakeTime = 12;
+    if (Math.hypot(ast.x - player.x, ast.y - player.y) &lt; ast.radius + 16) {
+      shield = Math.max(0, shield - 25);
+      shakeTime = 14;
       playSound('explode');
       ast.y = canvas.height + 100;
-      if (shield <= 0) {
+
+      if (shield &lt;= 0) {
         gameOver = true;
-        document.getElementById('gameOverScreen').classList.remove('hidden');
+        const record = Math.max(score, parseInt(localStorage.getItem('star_defender_highscore') || '0', 10));
+        localStorage.setItem('star_defender_highscore', record);
+        finalScoreEl.innerText = score;
+        finalRecordEl.innerText = record;
+        gameOverScreen.classList.remove('hidden');
       }
     }
   });
+  asteroids = asteroids.filter(ast =&gt; ast.y &lt; canvas.height + 60);
 
-  // Столкновения Пуля-Астероид
-  bullets.forEach((b, bIdx) => {
-    asteroids.forEach((ast, aIdx) => {
-      if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 4) {
+  // Столкновения пуль с астероидами
+  for (let bIdx = bullets.length - 1; bIdx &gt;= 0; bIdx--) {
+    const b = bullets[bIdx];
+    for (let aIdx = asteroids.length - 1; aIdx &gt;= 0; aIdx--) {
+      const ast = asteroids[aIdx];
+      if (Math.hypot(b.x - ast.x, b.y - ast.y) &lt; ast.radius + 5) {
         playSound('explode');
-        // Шанс бонуса
-        if (Math.random() < 0.25) {
-          bonuses.push({ x: ast.x, y: ast.y, type: Math.random() > 0.5 ? 'TRIPLE' : 'SHIELD' });
+
+        // Частицы взрыва
+        for (let i = 0; i &lt; 8; i++) {
+          particles.push({
+            x: ast.x, y: ast.y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            life: 1,
+            color: '#8fa3bf'
+          });
         }
-        // Раскалывание
-        if (ast.radius > 25) {
-          asteroids.push({ ...ast, radius: 18, x: ast.x - 12, speed: ast.speed + 0.5 });
-          asteroids.push({ ...ast, radius: 18, x: ast.x + 12, speed: ast.speed + 0.5 });
+
+        // Шанс выпадения бонуса
+        if (Math.random() &lt; 0.28) {
+          bonuses.push({
+            x: ast.x, y: ast.y,
+            type: Math.random() &gt; 0.5 ? 'TRIPLE' : 'SHIELD'
+          });
         }
+
+        // Раскалывание крупного астероида на 2 осколка
+        if (ast.radius &gt; 26) {
+          asteroids.push(createAsteroid(ast.x - 14, ast.y, 18, ast.speed + 0.6));
+          asteroids.push(createAsteroid(ast.x + 14, ast.y, 18, ast.speed + 0.6));
+        }
+
         asteroids.splice(aIdx, 1);
         bullets.splice(bIdx, 1);
         score += 100;
+        break;
       }
-    });
+    }
+  }
+
+  // Частицы
+  particles.forEach(p =&gt; {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.04;
   });
+  particles = particles.filter(p =&gt; p.life &gt; 0);
 
   // Бонусы
-  bonuses.forEach((bn, idx) => {
-    bn.y += 2;
-    if (Math.hypot(bn.x - player.x, bn.y - player.y) < 25) {
+  for (let idx = bonuses.length - 1; idx &gt;= 0; idx--) {
+    const bn = bonuses[idx];
+    bn.y += 2.2;
+    if (Math.hypot(bn.x - player.x, bn.y - player.y) &lt; 26) {
+      playSound('bonus');
       if (bn.type === 'TRIPLE') {
-        laserMode = 'ТРОЙНОЙ';
-        laserTimer = 300;
-        document.getElementById('hud-laser').innerText = 'ТРОЙНОЙ';
+        laserMode = 'TRIPLE';
+        laserTimer = 320;
+        laserModeEl.innerText = 'ТРОЙНОЙ';
       } else {
         shield = Math.min(100, shield + 30);
       }
       bonuses.splice(idx, 1);
+    } else if (bn.y &gt; canvas.height + 20) {
+      bonuses.splice(idx, 1);
     }
-  });
+  }
 
   // Обновление HUD
-  document.getElementById('hud-score').innerText = score;
-  document.getElementById('hud-shield-bar').style.width = shield + '%';
+  scoreEl.innerText = score;
+  shieldBarEl.style.width = shield + '%';
 }
 
 function render() {
   ctx.save();
-  if (shakeTime > 0) {
-    ctx.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+  if (shakeTime &gt; 0) {
+    ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
     shakeTime--;
   }
 
   ctx.fillStyle = '#050814';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Отрисовка звезд
-  ctx.fillStyle = '#ffffff';
-  stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
+  // Отрисовка звёзд
+  stars.forEach(s =&gt; {
+    ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  });
+
+  // Отрисовка частиц взрыва
+  particles.forEach(p =&gt; {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, 3, 3);
+  });
+  ctx.globalAlpha = 1.0;
 
   // Отрисовка пуль
-  ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff';
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = '#00f3ff';
   ctx.fillStyle = '#00f3ff';
-  bullets.forEach(b => ctx.fillRect(b.x - 2, b.y - 8, 4, 12));
+  bullets.forEach(b =&gt; ctx.fillRect(b.x - 2, b.y - 10, 4, 14));
 
   // Отрисовка астероидов
   ctx.shadowBlur = 0;
-  asteroids.forEach(ast => {
+  asteroids.forEach(ast =&gt; {
     ctx.save();
     ctx.translate(ast.x, ast.y);
     ctx.rotate(ast.angle);
     ctx.beginPath();
-    for (let i = 0; i < ast.points; i++) {
+    for (let i = 0; i &lt; ast.points; i++) {
       const a = (i / ast.points) * Math.PI * 2;
       const r = ast.offset[i];
-      if (i === 0) ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
-      else ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
     }
     ctx.closePath();
-    ctx.fillStyle = '#161e31'; ctx.fill();
-    ctx.strokeStyle = '#8fa3bf'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#161e31';
+    ctx.fill();
+    ctx.strokeStyle = '#8fa3bf';
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.restore();
   });
 
   // Отрисовка бонусов
-  bonuses.forEach(bn => {
+  bonuses.forEach(bn =&gt; {
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = bn.type === 'TRIPLE' ? '#f59e0b' : '#10b981';
     ctx.beginPath();
-    ctx.arc(bn.x, bn.y, 10, 0, Math.PI * 2);
+    ctx.arc(bn.x, bn.y, 11, 0, Math.PI * 2);
     ctx.fillStyle = bn.type === 'TRIPLE' ? '#f59e0b' : '#10b981';
     ctx.fill();
+    ctx.restore();
   });
 
-  // Отрисовка Корабля
+  // Отрисовка корабля игрока
   ctx.save();
-  ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = '#00f3ff';
   ctx.beginPath();
-  ctx.moveTo(player.x, player.y - 22);
-  ctx.lineTo(player.x + 20, player.y + 18);
+  ctx.moveTo(player.x, player.y - 24);
+  ctx.lineTo(player.x + 22, player.y + 18);
   ctx.lineTo(player.x, player.y + 10);
-  ctx.lineTo(player.x - 20, player.y + 18);
+  ctx.lineTo(player.x - 22, player.y + 18);
   ctx.closePath();
-  ctx.fillStyle = '#0b0f19'; ctx.fill();
-  ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#0b0f19';
+  ctx.fill();
+  ctx.strokeStyle = '#00f3ff';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
 
   // Кокпит
   ctx.beginPath();
-  ctx.ellipse(player.x, player.y - 4, 5, 10, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffffff'; ctx.fill();
+  ctx.ellipse(player.x, player.y - 4, 6, 12, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
 
-  // Пламя
+  // Пламя двигателя
   ctx.shadowColor = '#ff007f';
   ctx.beginPath();
   ctx.moveTo(player.x - 6, player.y + 12);
-  ctx.lineTo(player.x, player.y + 22 + Math.random()*6);
+  ctx.lineTo(player.x, player.y + 24 + Math.random() * 7);
   ctx.lineTo(player.x + 6, player.y + 12);
-  ctx.fillStyle = '#ff007f'; ctx.fill();
+  ctx.fillStyle = '#ff007f';
+  ctx.fill();
   ctx.restore();
 
   ctx.restore();
@@ -1120,10 +1250,8 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-document.getElementById('startBtn').onclick = () => {
-  document.getElementById('startScreen').classList.add('hidden');
-  isRunning = true;
-};
+startBtn.onclick = startGame;
+restartBtn.onclick = startGame;
 requestAnimationFrame(loop);</code></pre>
           </div>
         </div>
