@@ -1,1919 +1,1519 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Звёздный Защитник — 40-минутное руководство по созданию космической игры на JS</title>
-  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Звёздный Защитник — Учебное методическое пособие по JS HTML5 Canvas</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter & Orbitron -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['Fira Code', 'monospace'],
-            orbitron: ['Orbitron', 'sans-serif'],
-          },
-          colors: {
-            space: {
-              950: '#03050c',
-              900: '#060913',
-              850: '#0c1020',
-              800: '#12182d',
-              700: '#1c2543',
-              600: '#2a3763'
-            },
-            neon: {
-              cyan: '#00f0ff',
-              magenta: '#ff007f',
-              purple: '#a855f7',
-              yellow: '#ffb700',
-              green: '#00ff66'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    /* Custom Neon Effects & Custom Scrollbar */
-    .neon-glow-cyan {
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35), inset 0 0 15px rgba(0, 240, 255, 0.15);
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #050814;
+      color: #e2e8f0;
+      overflow-x: hidden;
     }
-    .neon-text-cyan {
-      text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
     }
-    .neon-text-magenta {
-      text-shadow: 0 0 10px rgba(255, 0, 127, 0.7);
-    }
-    
+
+    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
     ::-webkit-scrollbar-track {
-      background: #060913;
+      background: #0b0f19;
     }
     ::-webkit-scrollbar-thumb {
-      background: #1c2543;
+      background: #1e293b;
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #00f0ff;
+      background: #00f3ff;
     }
 
-    /* Touch Controls */
-    .touch-btn {
-      touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
+    /* Game Neon Stylings */
+    .neon-border-cyan {
+      border: 1px solid rgba(0, 243, 255, 0.6);
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.25), inset 0 0 10px rgba(0, 243, 255, 0.1);
+    }
+    
+    .neon-border-amber {
+      border: 1px solid rgba(245, 158, 11, 0.8);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.25), inset 0 0 10px rgba(245, 158, 11, 0.1);
+    }
+
+    .hud-box {
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+    }
+
+    /* Shield Bar Gradient */
+    #hud-shield-bar {
+      transition: width 0.2s ease-out, background-color 0.3s ease;
+      background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Canvas styling */
+    #gameCanvas {
+      background-color: #050814;
+      touch-action: none;
+    }
+
+    /* Code block styling */
+    pre code {
+      font-family: 'Fira Code', 'Courier New', Courier, monospace;
+      font-size: 0.875rem;
+    }
+
+    /* Method card glow */
+    .method-card {
+      border-left: 4px solid #00f3ff;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .tab-btn.active {
+      background-color: #00f3ff;
+      color: #050814;
+      font-weight: 700;
     }
   </style>
 </head>
-<body class="bg-space-900 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-neon-cyan selection:text-space-950">
+<body class="min-h-screen flex flex-col">
 
-  <!-- ШАПКА САЙТА И НАВИГАЦИЯ -->
-  <header class="border-b border-space-700/60 bg-space-950/90 backdrop-blur sticky top-0 z-50 px-4 py-3">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-      
-      <!-- Логотип и Название -->
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-purple-600 to-pink-500 flex items-center justify-center font-orbitron font-black text-space-950 text-2xl shadow-lg shadow-cyan-500/25">
-          🚀
-        </div>
-        <div>
-          <h1 class="font-orbitron font-extrabold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan via-white to-neon-purple">
-            ЗВЁЗДНЫЙ ЗАЩИТНИК
-          </h1>
-          <p class="text-xs text-slate-400 font-mono">Интерактивный 40-минутный курс по JS Canvas</p>
-        </div>
+  <!-- HEADER / NAVIGATION -->
+  <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-50 px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-400 flex items-center justify-center text-cyan-400 font-orbitron font-bold text-xl shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+        🚀
       </div>
-
-      <!-- Статистика рекорда и Аудио -->
-      <div class="flex items-center space-x-3 text-xs font-mono">
-        <div class="bg-space-850 border border-space-700 rounded-full px-3 py-1.5 flex items-center space-x-2">
-          <span class="text-slate-400">РЕКОРД:</span>
-          <span id="hud-top-highscore" class="text-neon-yellow font-bold text-sm">0</span>
-        </div>
-        
-        <button id="btn-sound-toggle" onclick="toggleSound()" class="bg-space-800 hover:bg-space-700 text-slate-200 border border-space-600 rounded-xl px-3 py-1.5 transition flex items-center space-x-1.5">
-          <span id="sound-icon">🔊</span>
-          <span id="sound-text" class="hidden sm:inline">ЗВУК ВКЛ</span>
-        </button>
+      <div>
+        <h1 class="font-orbitron font-bold text-lg md:text-xl text-white tracking-wide">
+          ЗВЁЗДНЫЙ ЗАЩИТНИК <span class="text-xs font-sans px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Курс JS Canvas</span>
+        </h1>
+        <p class="text-xs text-slate-400">40-минутное интерактивное методическое пособие и 100% точный проект</p>
       </div>
+    </div>
 
-      <!-- Переключатель Режимов Просмотра -->
-      <div class="flex bg-space-950 p-1 rounded-xl border border-space-700 text-xs font-semibold">
-        <button id="tab-split" onclick="setViewMode('split')" class="px-3 py-1.5 rounded-lg transition text-neon-cyan bg-space-700 border border-cyan-500/40">
-          ⚡ Раздельный экран
-        </button>
-        <button id="tab-arcade" onclick="setViewMode('arcade')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
-          🎮 Игра на весь экран
-        </button>
-        <button id="tab-guide" onclick="setViewMode('guide')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
-          📖 Учебник на весь экран
-        </button>
-      </div>
+    <!-- VIEW MODES SWITCHER -->
+    <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs md:text-sm font-medium">
+      <button id="mode-split" onclick="switchViewMode('split')" class="px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all bg-cyan-500 text-slate-950 font-bold">
+        <i class="fa-solid fa-columns"></i> Разделённый экран
+      </button>
+      <button id="mode-game" onclick="switchViewMode('game')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-2 transition-all">
+        <i class="fa-solid fa-gamepad"></i> Игра на весь экран
+      </button>
+      <button id="mode-guide" onclick="switchViewMode('guide')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-2 transition-all">
+        <i class="fa-solid fa-book-open"></i> Только методичка
+      </button>
+    </div>
 
+    <!-- AUDIO & RESET CONTROLS -->
+    <div class="flex items-center gap-2">
+      <button id="toggle-sound-btn" onclick="toggleSound()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs flex items-center gap-1.5 transition">
+        <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i> <span id="sound-text">Звук: Вкл</span>
+      </button>
+      <button onclick="resetHighScore()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate-left"></i> Сброс рекорда
+      </button>
     </div>
   </header>
 
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 flex flex-col lg:flex-row p-3 md:p-5 gap-5 max-w-[1920px] mx-auto w-full">
 
-  <!-- ОСНОВНОЙ КОНТЕНТ -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- LEFT PANE: LIVE GAME WORKSPACE -->
+    <section id="game-pane" class="w-full lg:w-1/2 flex flex-col items-center justify-start transition-all duration-300">
+      <div class="relative w-full max-w-[560px] aspect-[3/4] bg-slate-950 rounded-2xl border border-cyan-500/30 overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] flex flex-col">
 
-    <!-- 1. РАЗДЕЛ ИГРЫ (ЛЕВАЯ КОЛОНКА) -->
-    <section id="game-section" class="lg:col-span-6 flex flex-col items-center justify-center space-y-3">
-      
-      <!-- Контейнер Canvas -->
-      <div class="relative w-full max-w-[600px] bg-space-850 rounded-2xl border-2 border-space-700 p-2 sm:p-3 neon-glow-cyan overflow-hidden shadow-2xl">
-        
-        <!-- Live HUD (Интерфейс во время игры) -->
-        <div class="absolute top-5 left-5 right-5 flex justify-between items-start pointer-events-none z-10 font-mono text-xs sm:text-sm">
-          <!-- Левый HUD: Счёт и Щит -->
-          <div class="flex flex-col gap-1.5">
-            <div class="bg-space-950/90 backdrop-blur border border-cyan-500/40 rounded-lg px-3 py-1.5 text-neon-cyan font-bold shadow-md">
-              СЧЁТ: <span id="hud-score" class="text-white text-base">0</span>
+        <!-- STYLED OVERLAY HUD (EXACT MATCH TO TARGET PHOTO) -->
+        <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none select-none">
+          <!-- Left HUD: Score & Shield Bar -->
+          <div class="flex flex-col gap-2">
+            <!-- Score Box -->
+            <div class="hud-box neon-border-cyan px-3 py-1.5 flex items-center gap-2 font-orbitron text-xs md:text-sm">
+              <span class="text-cyan-400 font-bold tracking-wider">СЧЁТ:</span>
+              <span id="hud-score" class="text-white font-extrabold">0</span>
             </div>
-            <div class="bg-space-950/90 backdrop-blur border border-emerald-500/40 rounded-lg px-3 py-1.5 text-neon-green font-bold text-xs flex items-center space-x-2">
-              <span>ЩИТ:</span>
-              <div class="w-20 bg-space-900 rounded-full h-2.5 overflow-hidden border border-space-700">
-                <div id="hud-shield-bar" class="bg-neon-green h-full transition-all duration-200" style="width: 100%;"></div>
+            <!-- Shield Box -->
+            <div class="hud-box neon-border-cyan px-3 py-1.5 flex items-center gap-2.5">
+              <span class="text-cyan-400 font-orbitron text-xs font-bold tracking-wider">ЩИТ:</span>
+              <div class="w-28 md:w-36 h-3 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                <div id="hud-shield-bar" class="h-full w-full rounded-full"></div>
               </div>
             </div>
           </div>
 
-          <!-- Правый HUD: Комбо и Оружие -->
-          <div class="flex flex-col items-end gap-1.5">
-            <div id="hud-combo" class="bg-space-950/90 backdrop-blur border border-pink-500/40 rounded-lg px-3 py-1.5 text-neon-magenta font-bold shadow-md opacity-0 transition-opacity">
-              КОМБО: <span id="hud-combo-val">1x</span>
-            </div>
-            <div id="hud-weapon" class="bg-space-950/90 backdrop-blur border border-amber-500/40 rounded-lg px-2.5 py-1 text-neon-yellow text-xs font-semibold">
-              ЛАЗЕР: ОДИНАРНЫЙ
-            </div>
+          <!-- Right HUD: Laser Mode Box -->
+          <div class="hud-box neon-border-amber px-3.5 py-1.5 flex items-center gap-2 font-orbitron text-xs md:text-sm">
+            <span class="text-amber-400 font-bold tracking-wider">ЛАЗЕР:</span>
+            <span id="hud-laser" class="text-amber-300 font-extrabold">ОДИНАРНЫЙ</span>
           </div>
         </div>
 
-        <!-- ИГРОВОЙ CANVAS -->
-        <canvas id="gameCanvas" width="600" height="700" class="w-full h-auto bg-space-950 rounded-xl cursor-crosshair block shadow-inner"></canvas>
+        <!-- CANVAS GAME CONTAINER -->
+        <canvas id="gameCanvas" width="560" height="740" class="w-full h-full object-contain block"></canvas>
 
-        <!-- ОВЕРЛЕЙ / МЕНЮ ИГРЫ -->
-        <div id="game-overlay" class="absolute inset-0 bg-space-950/92 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 transition-all duration-300">
-          <div class="max-w-sm w-full space-y-4">
-            <h2 id="overlay-title" class="font-orbitron text-2xl sm:text-3xl font-black text-neon-cyan tracking-wide">
-              ЗВЁЗДНЫЙ ЗАЩИТНИК
-            </h2>
-            <p id="overlay-desc" class="text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Уничтожайте астероидные аномалии, собирайте энергетические бонусы и защищайте галактический сектор!
-            </p>
-            
-            <!-- Финальная статистика (при проигрыше) -->
-            <div id="overlay-stats" class="hidden bg-space-850 p-3.5 rounded-xl border border-space-700 font-mono text-xs space-y-1.5 text-left">
-              <div class="flex justify-between"><span class="text-slate-400">Набранный счёт:</span><span id="final-score" class="text-neon-cyan font-bold">0</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Уничтожено астероидов:</span><span id="final-asteroids" class="text-white">0</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Лучший рекорд:</span><span id="final-highscore" class="text-neon-yellow font-bold">0</span></div>
+        <!-- START GAME OVERLAY -->
+        <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
+          <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-400 flex items-center justify-center text-cyan-400 text-3xl mb-4 shadow-[0_0_20px_rgba(0,243,255,0.4)]">
+            🚀
+          </div>
+          <h2 class="font-orbitron font-black text-2xl md:text-3xl text-white mb-2 tracking-wider">ЗВЁЗДНЫЙ ЗАЩИТНИК</h2>
+          <p class="text-slate-400 text-xs md:text-sm max-w-xs mb-6">
+            Защитите сектор от процедурных астероидов! Собирайте бонусы лазера и щита.
+          </p>
+          <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 text-left text-xs text-slate-300 mb-6 space-y-1.5 w-full max-w-xs">
+            <p><span class="text-cyan-400 font-bold">⬅️ ➡️ / A D:</span> Перемещение корабля</p>
+            <p><span class="text-cyan-400 font-bold">Пробел:</span> Стрельба неоновым лазером</p>
+            <p><span class="text-amber-400 font-bold">Бонусы:</span> Улучшение лазера и ремонт</p>
+          </div>
+          <button onclick="startGame()" class="w-full max-w-xs py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-orbitron font-black text-sm tracking-wider uppercase transition shadow-[0_0_20px_rgba(0,243,255,0.4)] transform hover:scale-105 active:scale-95">
+            НАЧАТЬ БОЙ
+          </button>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div id="game-over-screen" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center hidden">
+          <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500 flex items-center justify-center text-rose-500 text-3xl mb-3 shadow-[0_0_20px_rgba(244,63,94,0.4)]">
+            💥
+          </div>
+          <h2 class="font-orbitron font-black text-2xl md:text-3xl text-rose-500 mb-1 tracking-wider">КОРАБЛЬ УНИЧТОЖЕН</h2>
+          <p class="text-slate-400 text-xs mb-6">Ваш щит пробит космическими обломками</p>
+          
+          <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-6">
+            <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+              <div class="text-[10px] text-slate-400 uppercase font-orbitron">Счёт</div>
+              <div id="final-score" class="text-xl font-orbitron font-bold text-white">0</div>
             </div>
-
-            <button id="btn-start" onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-neon-cyan via-blue-600 to-neon-purple hover:opacity-90 text-space-950 font-orbitron font-extrabold rounded-xl shadow-lg shadow-cyan-500/30 transform active:scale-95 transition text-base tracking-wider">
-              НАЧАТЬ ИГРУ
-            </button>
-            
-            <div class="text-[11px] text-slate-400 font-mono space-y-1 bg-space-900/60 p-2.5 rounded-lg border border-space-800">
-              <p>Управление: <span class="text-neon-cyan">Стрелки / WASD</span> — Движение</p>
-              <p><span class="text-neon-cyan">Пробел</span> — Стрельба | <span class="text-neon-cyan">P / Esc</span> — Пауза</p>
+            <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl">
+              <div class="text-[10px] text-slate-400 uppercase font-orbitron">Рекорд</div>
+              <div id="final-record" class="text-xl font-orbitron font-bold text-cyan-400">0</div>
             </div>
           </div>
+
+          <button onclick="startGame()" class="w-full max-w-xs py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-orbitron font-black text-sm tracking-wider uppercase transition shadow-[0_0_20px_rgba(0,243,255,0.4)] transform hover:scale-105 active:scale-95">
+            ПОВТОРИТЬ ПОПЫТКУ
+          </button>
         </div>
 
       </div>
 
-      <!-- Сенсорный пульт управления для мобильных устройств -->
-      <div class="w-full max-w-[600px] grid grid-cols-3 gap-2 bg-space-850 p-2 rounded-xl border border-space-700">
-        <button id="touch-left" class="touch-btn bg-space-800 active:bg-cyan-500/30 text-slate-200 py-3 rounded-lg font-bold border border-space-600 flex items-center justify-center text-sm">
-          ◄ ЛЕВО
+      <!-- TOUCH CONTROLS FOR MOBILE DEVICE TEST -->
+      <div class="mt-4 flex gap-3 w-full max-w-[560px] justify-between lg:hidden">
+        <button id="touch-left" class="flex-1 py-4 bg-slate-900 border border-slate-800 active:bg-cyan-500/20 rounded-xl text-cyan-400 font-bold text-xl select-none">
+          ◀
         </button>
-        <button id="touch-fire" class="touch-btn bg-neon-magenta/20 active:bg-neon-magenta/50 text-neon-magenta py-3 rounded-lg font-extrabold border border-neon-magenta/40 flex items-center justify-center text-sm">
+        <button id="touch-fire" class="flex-1 py-4 bg-slate-900 border border-amber-500/40 active:bg-amber-500/20 rounded-xl text-amber-400 font-bold text-sm uppercase tracking-wider select-none">
           🔥 ОГОНЬ
         </button>
-        <button id="touch-right" class="touch-btn bg-space-800 active:bg-cyan-500/30 text-slate-200 py-3 rounded-lg font-bold border border-space-600 flex items-center justify-center text-sm">
-          ПРАВО ►
+        <button id="touch-right" class="flex-1 py-4 bg-slate-900 border border-slate-800 active:bg-cyan-500/20 rounded-xl text-cyan-400 font-bold text-xl select-none">
+          ▶
         </button>
       </div>
-
     </section>
 
+    <!-- RIGHT PANE: EDUCATIONAL METHODICAL GUIDE -->
+    <section id="guide-pane" class="w-full lg:w-1/2 flex flex-col bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4 md:p-6 overflow-y-auto max-h-[calc(100vh-100px)]">
 
-    <!-- 2. РАЗДЕЛ УЧЕБНОГО РУКОВОДСТВА (ПРАВАЯ КОЛОНКА) -->
-    <section id="guide-section" class="lg:col-span-6 space-y-5">
-      
-      <!-- Карточка введения в курс -->
-      <div class="bg-space-850 rounded-2xl border border-space-700 p-5 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="px-3 py-1 bg-cyan-950 text-neon-cyan rounded-md text-xs font-mono font-semibold border border-cyan-800">
-            ⏱️ КУРС: 40 МИНУТ
-          </span>
-          <span class="text-xs text-slate-400 font-mono">Требования: Основы JS</span>
-        </div>
-        <h2 class="font-orbitron font-bold text-xl text-white">
-          Пошаговое создание космической игры на Vanilla JS
-        </h2>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          В этом интерактивном руководстве вы изучите: отрисовку на Canvas 2D, векторную физику, многоугольники астероидов, расчёт коллизий по формуле расстояния, синтез звука через Web Audio API и управление состоянием игры.
-        </p>
-
-        <!-- Прогресс прохождения руководства -->
-        <div class="pt-2">
-          <div class="flex justify-between text-[11px] font-mono text-slate-400 mb-1">
-            <span>Прогресс изучения:</span>
-            <span id="guide-progress-percent">0% Завершено</span>
-          </div>
-          <div class="w-full bg-space-950 rounded-full h-2.5 border border-space-700 overflow-hidden">
-            <div id="guide-progress-bar" class="bg-gradient-to-r from-neon-cyan via-purple-500 to-neon-magenta h-full transition-all duration-300" style="width: 0%;"></div>
-          </div>
-        </div>
-
-        <!-- Быстрое оглавление -->
-        <div class="pt-2 border-t border-space-700/60">
-          <div class="text-[11px] font-mono text-slate-400 mb-2 font-semibold">Быстрая навигация:</div>
-          <div class="flex flex-wrap gap-1.5 text-[11px] font-mono">
-            <a href="#mod1-anchor" onclick="openAndScroll('mod1')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М1: Canvas</a>
-            <a href="#mod2-anchor" onclick="openAndScroll('mod2')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М2: Корабль</a>
-            <a href="#mod3-anchor" onclick="openAndScroll('mod3')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М3: Лазеры</a>
-            <a href="#mod4-anchor" onclick="openAndScroll('mod4')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М4: Астероиды</a>
-            <a href="#mod5-anchor" onclick="openAndScroll('mod5')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М5: Коллизии</a>
-            <a href="#mod6-anchor" onclick="openAndScroll('mod6')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М6: Эффекты</a>
-            <a href="#mod7-anchor" onclick="openAndScroll('mod7')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М7: Звук</a>
-            <a href="#mod8-anchor" onclick="openAndScroll('mod8')" class="bg-space-800 hover:bg-space-700 text-cyan-300 px-2 py-1 rounded border border-space-700">М8: Сборка</a>
-            <a href="#project-structure-section" class="bg-purple-950 hover:bg-purple-900 text-neon-purple px-2 py-1 rounded border border-purple-700 font-bold">📁 Файлы Проекта</a>
-          </div>
+      <!-- TOC / NAVIGATION BAR -->
+      <div class="mb-6 p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
+        <h3 class="font-orbitron font-bold text-cyan-400 text-sm tracking-wider uppercase mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-list-ol"></i> Оглавление модуля разработки (40 минут)
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          <a href="#module-1" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M1:</span> Каркас & Параллакс
+          </a>
+          <a href="#module-2" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M2:</span> Векторный Корабль
+          </a>
+          <a href="#module-3" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M3:</span> Физика & Границы
+          </a>
+          <a href="#module-4" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M4:</span> Астероиды
+          </a>
+          <a href="#module-5" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M5:</span> Лазеры & Раскол
+          </a>
+          <a href="#module-6" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M6:</span> Бонусы & Тряска
+          </a>
+          <a href="#module-7" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M7:</span> Web Audio & Счёт
+          </a>
+          <a href="#module-8" class="p-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+            <span class="text-cyan-400 font-bold">M8:</span> Финал & Исходники
+          </a>
         </div>
       </div>
 
-      <!-- СПИСОК 8 УЧЕБНЫХ МОДУЛЕЙ -->
-      <div class="space-y-4">
-        
-        <!-- МОДУЛЬ 1 -->
-        <div id="mod1-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod1')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">01</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 1: Canvas и Игровой цикл (Game Loop)</h3>
-                <p class="text-[11px] text-slate-400 font-mono">0–5 мин • Инициализация Canvas API и 60 FPS рендеринг</p>
-              </div>
-            </div>
-            <span id="icon-mod1" class="text-slate-400 text-sm">▼</span>
-          </button>
+      <!-- MODULE 1 -->
+      <article id="module-1" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">0-5 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 1: Архитектура, HTML5 Canvas и Параллакс-звёзды</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          На первом этапе создаётся координатная плоскость HTML5 Canvas $(0,0 \text{ слева вверху})$ и инициализируется многослойный параллакс-фон с мерцающими звёздами различной глубины.
+        </p>
+
+        <!-- SVG DIAGRAM: CANVAS COORDINATES -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+          <svg viewBox="0 0 400 180" class="w-full max-w-md">
+            <rect x="10" y="10" width="380" height="160" rx="8" fill="#050814" stroke="#00f3ff" stroke-dasharray="4 4" stroke-opacity="0.5"/>
+            <circle cx="20" cy="20" r="4" fill="#00f3ff"/>
+            <text x="30" y="25" fill="#00f3ff" font-size="12" font-family="Orbitron">(0, 0) Начало координат</text>
+            <line x1="20" y1="20" x2="120" y2="20" stroke="#00f3ff" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="130" y="24" fill="#00f3ff" font-size="11">+X (Ширина W)</text>
+            <line x1="20" y1="20" x2="20" y2="100" stroke="#00f3ff" stroke-width="2"/>
+            <text x="25" y="115" fill="#00f3ff" font-size="11">+Y (Высота H)</text>
+            <!-- Stars -->
+            <circle cx="150" cy="70" r="1.5" fill="#ffffff" opacity="0.8"/>
+            <circle cx="280" cy="120" r="2.5" fill="#00f3ff" opacity="0.9"/>
+            <circle cx="220" cy="40" r="1" fill="#ffffff" opacity="0.5"/>
+          </svg>
+          <span class="text-xs text-slate-400 mt-2">Схема 1.1: Система координат HTML5 Canvas и генерация звёздного поля</span>
+        </div>
+
+        <!-- JS METHOD CARDS FOR MODULE 1 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
           
-          <div id="mod1" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <!-- Список JS методов -->
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">HTMLCanvasElement.getContext('2d')</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">requestAnimationFrame()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">ctx.clearRect()</span>
-            </div>
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">Array.from({ length: N }, callback)</div>
+            <p><span class="text-slate-400">Как работает:</span> Создаёт массив заданной длины $N$ и заполняет его объектами через функцию обратного вызова.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Новый массивы `Array` со сформированными элементами.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Мгновенная генерация 100+ звёзд с индивидуальным $X, Y$, радиусом и скоростью.</p>
+          </div>
 
-            <p>
-              Любая 2D игра работает по принципу непрерывного игрового цикла: <strong class="text-white">Очистка кадра ➔ Обновление координат ➔ Перерисовка объектов</strong>. Функция <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">requestAnimationFrame</code> синхронизирует обновления с частотой развёртки монитора (60 FPS).
-            </p>
-
-            <!-- SVG Иллюстрация: Система координат Canvas -->
-            <div class="bg-space-950 p-4 rounded-xl border border-space-700 text-center space-y-2">
-              <div class="text-[11px] font-mono text-neon-cyan font-semibold">Схема системы координат HTML5 Canvas (600 × 700)</div>
-              <svg viewBox="0 0 320 140" class="w-full max-w-md mx-auto fill-none text-[10px] font-mono">
-                <rect x="20" y="15" width="280" height="110" rx="6" class="stroke-cyan-500/50 fill-space-900" stroke-width="1.5"/>
-                <!-- Ось X -->
-                <line x1="20" y1="15" x2="100" y2="15" stroke="#00f0ff" stroke-width="2.5"/>
-                <polygon points="100,12 107,15 100,18" fill="#00f0ff"/>
-                <text x="112" y="18" fill="#00f0ff" font-weight="bold">+X (Ширина: 600px)</text>
-                <!-- Ось Y -->
-                <line x1="20" y1="15" x2="20" y2="75" stroke="#ff007f" stroke-width="2.5"/>
-                <polygon points="17,75 20,82 23,75" fill="#ff007f"/>
-                <text x="26" y="85" fill="#ff007f" font-weight="bold">+Y (Высота: 700px)</text>
-                <!-- Начало координат -->
-                <circle cx="20" cy="15" r="4" fill="#ffb700"/>
-                <text x="28" y="30" fill="#ffb700" font-weight="bold">Начало координат (0,0)</text>
-              </svg>
-            </div>
-
-            <!-- Код модуля с кнопкой скопировать -->
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Код игрового цикла</span>
-                <button onclick="copySnippet('code-mod1', 'btn-cp-m1')" id="btn-cp-m1" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod1" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-let lastTime = 0;
-
-function gameLoop(timestamp) {
-  const deltaTime = timestamp - lastTime;
-  lastTime = timestamp;
-
-  // 1. Очищаем холст
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 2. Обновляем и рисуем объекты
-  update(deltaTime);
-  render();
-
-  // 3. Запрашиваем следующий кадр
-  requestAnimationFrame(gameLoop);
-}
-
-requestAnimationFrame(gameLoop);</pre>
-            </div>
-
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod1')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я освоил концепцию игрового цикла и координаты Canvas!</span>
-            </label>
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.fillRect(x, y, width, height)</div>
+            <p><span class="text-slate-400">Как работает:</span> Закрашивает прямоугольную область на холсте цветом из `ctx.fillStyle`.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `undefined`.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Полная очистка фона темным оттенком `#050814` перед вычислением нового кадра.</p>
           </div>
         </div>
 
-        <!-- МОДУЛЬ 2 -->
-        <div id="mod2-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod2')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">02</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 2: Корабль игрока и обработка ввода</h3>
-                <p class="text-[11px] text-slate-400 font-mono">5–10 мин • Класс Ship, структуры Set() и ограничение Math.max/min</p>
-              </div>
-            </div>
-            <span id="icon-mod2" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod2" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <!-- Бейджи методов -->
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">class Ship</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">new Set()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Math.max() / Math.min()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">ctx.beginPath() / stroke()</span>
-            </div>
-
-            <p>
-              Для плавной обработки одновременно зажатых клавиш удобно использовать структуру <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">new Set()</code>. Чтобы корабль не вылетал за границы Canvas, мы удерживаем позицию методом <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">Math.max()</code> и <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">Math.min()</code>.
-            </p>
-
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Класс Ship и обработчик клавиатуры</span>
-                <button onclick="copySnippet('code-mod2', 'btn-cp-m2')" id="btn-cp-m2" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod2" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-const keysPressed = new Set();
-window.addEventListener('keydown', (e) => keysPressed.add(e.code));
-window.addEventListener('keyup', (e) => keysPressed.delete(e.code));
-
-class Ship {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.radius = 18;
-    this.speed = 7;
-  }
-
-  update(canvasWidth) {
-    if (keysPressed.has('ArrowLeft') || keysPressed.has('KeyA')) this.x -= this.speed;
-    if (keysPressed.has('ArrowRight') || keysPressed.has('KeyD')) this.x += this.speed;
-
-    // Ограничение движения в пределах экрана
-    this.x = Math.max(this.radius, Math.min(canvasWidth - this.radius, this.x));
-  }
-
-  draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.beginPath();
-    ctx.moveTo(0, -22); // Нос
-    ctx.lineTo(18, 22); // Правое крыло
-    ctx.lineTo(-18, 22); // Левое крыло
-    ctx.closePath();
-    ctx.strokeStyle = '#00f0ff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-  }
-}</pre>
-            </div>
-
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod2')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я научился управлять объектом игрока через Set и классы!</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- МОДУЛЬ 3 -->
-        <div id="mod3-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod3')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">03</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 3: Звёздный фон с параллаксом и стрельба</h3>
-                <p class="text-[11px] text-slate-400 font-mono">10–15 мин • Array.from(), массивы объектов и очистка памяти filter()</p>
-              </div>
-            </div>
-            <span id="icon-mod3" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod3" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Array.from()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Array.prototype.filter()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">performance.now()</span>
-            </div>
-
-            <p>
-              Звёздное небо генерируется через <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">Array.from()</code> с разной скоростью для каждого слоя (параллакс). Лазеры сохраняются в массив. Когда снаряд вылетает за экран, мы удаляем его вызовом <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">bullets.filter()</code>, предохраняя браузер от утечки памяти.
-            </p>
-
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Параллакс и очистка снарядов</span>
-                <button onclick="copySnippet('code-mod3', 'btn-cp-m3')" id="btn-cp-m3" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod3" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-// Генерация 80 звёзд с разным уровнем глубины
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>// Инициализация звездного параллакса
 const stars = Array.from({ length: 80 }, () => ({
   x: Math.random() * canvas.width,
   y: Math.random() * canvas.height,
-  speed: Math.random() * 1.5 + 0.3,
-  size: Math.random() * 2 + 0.5
+  size: Math.random() * 2 + 0.5,
+  speed: Math.random() * 1.5 + 0.5,
+  alpha: Math.random()
 }));
 
-let bullets = [];
+function drawStars() {
+  stars.forEach(star => {
+    ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+    ctx.fillRect(star.x, star.y, star.size, star.size);
+    star.y += star.speed;
+    if (star.y > canvas.height) star.y = 0;
+  });
+}</code></pre>
+        </div>
+      </article>
 
-function updateProjectiles() {
-  // Движение лазеров вверх
-  bullets.forEach(b => b.y -= b.speed);
+      <!-- MODULE 2 -->
+      <article id="module-2" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">5-11 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 2: Детализированный векторный корабль с неоновым свечением</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Корабль игрока отрисовывается без использования растровых спрайтов — применяются векторные пути `beginPath()`, овальный кокпит `ellipse()`, неоновый свет `shadowBlur` и пульсирующее малиновое пламя двигателя.
+        </p>
 
-  // ФИЛЬТРАЦИЯ: оставляем только активные лазеры в пределах экрана
-  bullets = bullets.filter(b => b.y > -20 && !b.destroyed);
-}</pre>
-            </div>
+        <!-- SVG DIAGRAM: SHIP VERTICES -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+          <svg viewBox="0 0 300 200" class="w-full max-w-xs">
+            <!-- Ship Outline -->
+            <path d="M 150 30 L 190 150 L 150 135 L 110 150 Z" fill="#0b0f19" stroke="#00f3ff" stroke-width="3"/>
+            <!-- Cockpit -->
+            <ellipse cx="150" cy="90" rx="8" ry="16" fill="#ffffff"/>
+            <!-- Flame -->
+            <polygon points="142,138 150,175 158,138" fill="#ff007f"/>
+            <!-- Labels -->
+            <circle cx="150" cy="30" r="4" fill="#ff007f"/>
+            <text x="160" y="32" fill="#ff007f" font-size="10">Нос (x, y - 25)</text>
+            <circle cx="110" cy="150" r="4" fill="#00f3ff"/>
+            <text x="40" y="155" fill="#00f3ff" font-size="10">Крыло L</text>
+            <circle cx="190" cy="150" r="4" fill="#00f3ff"/>
+            <text x="200" y="155" fill="#00f3ff" font-size="10">Крыло R</text>
+          </svg>
+          <span class="text-xs text-slate-400 mt-2">Схема 2.1: Геометрические точки и пути отрисовки боевого челнока</span>
+        </div>
 
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod3')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Понятно, как создавать параллакс и фильтровать массивы!</span>
-            </label>
+        <!-- JS METHOD CARDS FOR MODULE 2 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.beginPath() / moveTo() / lineTo()</div>
+            <p><span class="text-slate-400">Как работает:</span> Открывает новый векторный путь, перемещает пера к начальной точке и вычерчивает отрезки.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `undefined`.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Формирование корпуса корабля с хищными заостренными крыльями.</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle)</div>
+            <p><span class="text-slate-400">Как работает:</span> Рисует эллиптическую дугу по центру и двум радиусам.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `undefined`.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Отрисовка белого каплевидного фонаря кабины пилота (кокпита).</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.shadowBlur & ctx.shadowColor</div>
+            <p><span class="text-slate-400">Как работает:</span> Настраивает параметры свечения (Гауссово размытие) для последующих strokes & fills.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Свойства контекста Canvas.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Реализация сочного неонового киберпанк-свечения элементов.</p>
           </div>
         </div>
 
-        <!-- МОДУЛЬ 4 -->
-        <div id="mod4-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod4')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">04</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 4: Процедурные астероиды и их раскалывание</h3>
-                <p class="text-[11px] text-slate-400 font-mono">15–22 мин • Math.cos/sin, ctx.rotate() и раскалывание split()</p>
-              </div>
-            </div>
-            <span id="icon-mod4" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod4" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Math.cos() / Math.sin()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">ctx.translate() / rotate()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Asteroid.split()</span>
-            </div>
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>function drawPlayer(x, y) {
+  ctx.save();
+  // Неоновое свечение
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = '#00f3ff';
+  
+  // Корпус корабля
+  ctx.beginPath();
+  ctx.moveTo(x, y - 22);
+  ctx.lineTo(x + 20, y + 18);
+  ctx.lineTo(x, y + 10);
+  ctx.lineTo(x - 20, y + 18);
+  ctx.closePath();
+  ctx.fillStyle = '#0b0f19';
+  ctx.fill();
+  ctx.strokeStyle = '#00f3ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-            <p>
-              Астероиды создаются процедурно без сторонних картинка-файлов. Мы рассчитываем координаты каждой неровной вершины многоугольника с помощью тригонометрии в полярных координатах: <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">x = r * cos(θ)</code> и <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">y = r * sin(θ)</code>.
-            </p>
+  // Овальный кокпит
+  ctx.beginPath();
+  ctx.ellipse(x, y - 4, 5, 10, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
 
-            <!-- SVG Иллюстрация: Полярная тригонометрия астероида -->
-            <div class="bg-space-950 p-4 rounded-xl border border-space-700 text-center space-y-2">
-              <div class="text-[11px] font-mono text-neon-cyan font-semibold">Тригонометрическое построение вершин астероида</div>
-              <svg viewBox="0 0 240 130" class="w-full max-w-xs mx-auto fill-none text-[10px] font-mono">
-                <!-- Окружность базового радиуса -->
-                <circle cx="120" cy="65" r="45" stroke="#334155" stroke-dasharray="3,3" stroke-width="1.5"/>
-                <!-- Неровный астероид -->
-                <polygon points="160,50 145,102 95,100 75,70 88,35 135,30" stroke="#94a3b8" stroke-width="2" fill="#12182d"/>
-                <!-- Луч угла theta -->
-                <line x1="120" y1="65" x2="160" y2="50" stroke="#ff007f" stroke-width="2"/>
-                <circle cx="120" cy="65" r="3" fill="#00f0ff"/>
-                <text x="130" y="55" fill="#ff007f" font-weight="bold">r(θ) = R ± rand</text>
-                <text x="75" y="120" fill="#00f0ff">x = cos(θ) · r</text>
-                <text x="140" y="120" fill="#00f0ff">y = sin(θ) · r</text>
-              </svg>
-            </div>
+  // Пламя двигателя
+  ctx.shadowColor = '#ff007f';
+  ctx.beginPath();
+  ctx.moveTo(x - 6, y + 12);
+  ctx.lineTo(x, y + 22 + Math.random() * 6);
+  ctx.lineTo(x + 6, y + 12);
+  ctx.fillStyle = '#ff007f';
+  ctx.fill();
 
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Генерация вершин и раскалывание</span>
-                <button onclick="copySnippet('code-mod4', 'btn-cp-m4')" id="btn-cp-m4" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod4" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-class Asteroid {
-  constructor(x, y, radius = 30, level = 3) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.level = level; // Level 3: Крупный, 2: Средний, 1: Малый
-    this.points = [];
-    
-    // Генерация 8-12 вершин со случайным отклонением радиуса
-    const verts = 9;
-    for (let i = 0; i < verts; i++) {
-      const angle = (i / verts) * Math.PI * 2;
-      const r = this.radius * (0.75 + Math.random() * 0.5);
-      this.points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
-    }
-  }
+  ctx.restore();
+}</code></pre>
+        </div>
+      </article>
 
-  split() {
-    if (this.level <= 1) return [];
-    // При раскалывании создаём два меньших осколка
-    return [
-      new Asteroid(this.x - 10, this.y, this.radius * 0.6, this.level - 1),
-      new Asteroid(this.x + 10, this.y, this.radius * 0.6, this.level - 1)
-    ];
-  }
-}</pre>
-            </div>
+      <!-- MODULE 3 -->
+      <article id="module-3" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">11-17 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 3: Игровой цикл и расчёт ограничений позиционирования</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Игровой цикл синхронизируется с частотой развертки монитора через `requestAnimationFrame()`. Управление обрабатывается объектом зажатых клавиш (`keys`), а положение корабля ограничивается с помощью `Math.max` и `Math.min`.
+        </p>
 
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod4')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я освоил процедурное построение и раскалывание!</span>
-            </label>
+        <!-- JS METHOD CARDS FOR MODULE 3 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">window.requestAnimationFrame(callback)</div>
+            <p><span class="text-slate-400">Как работает:</span> Запрашивает у браузера вызов функции обновления графики перед следующей перерисовкой экрана (~60/144 FPS).</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Идентификатор таймера `requestID` (число).</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Главная пружина плавного бесшовного игрового цикла без лагов.</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">Math.max(a, b) & Math.min(a, b)</div>
+            <p><span class="text-slate-400">Как работает:</span> Возвращают наибольшее и наименьшее значение среди аргументов.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `number` (число).</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Ограничение $X$-координаты игрока (Clamp), не позволяющее вылететь за рамки Canvas.</p>
           </div>
         </div>
 
-        <!-- МОДУЛЬ 5 -->
-        <div id="mod5-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod5')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">05</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 5: Математика столкновений (Коллизии)</h3>
-                <p class="text-[11px] text-slate-400 font-mono">22–28 мин • Теорема Пифагора и быстрый метод Math.hypot()</p>
-              </div>
-            </div>
-            <span id="icon-mod5" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod5" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Math.hypot(dx, dy)</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Радиальное пересечение</span>
-            </div>
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
 
-            <p>
-              Для мгновенной проверки столкновения двух круглых объектов в 2D используется формула евклидова расстояния: <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">d = √((x₂ - x₁)² + (y₂ - y₁)²)</code>. Современный JS предоставляет эффективный метод <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">Math.hypot(dx, dy)</code>.
-            </p>
+function updatePlayer() {
+  if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
 
-            <!-- SVG Иллюстрация: Пересечение двух окружностей -->
-            <div class="bg-space-950 p-4 rounded-xl border border-space-700 text-center space-y-2">
-              <div class="text-[11px] font-mono text-neon-cyan font-semibold">Геометрия детекции столкновений (Hit-test)</div>
-              <svg viewBox="0 0 260 110" class="w-full max-w-xs mx-auto fill-none text-[10px] font-mono">
-                <!-- Окружность 1 (Корабль / Лазер) -->
-                <circle cx="80" cy="55" r="30" stroke="#00f0ff" stroke-width="2" fill="rgba(0, 240, 255, 0.1)"/>
-                <!-- Окружность 2 (Астероид) -->
-                <circle cx="155" cy="55" r="28" stroke="#ff007f" stroke-width="2" fill="rgba(255, 0, 127, 0.1)"/>
-                <!-- Вектор расстояния d -->
-                <line x1="80" y1="55" x2="155" y2="55" stroke="#ffb700" stroke-width="2" stroke-dasharray="3,3"/>
-                <circle cx="80" cy="55" r="3" fill="#00f0ff"/>
-                <circle cx="155" cy="55" r="3" fill="#ff007f"/>
-                <text x="100" y="48" fill="#ffb700" font-weight="bold">d = 75px</text>
-                <text x="70" y="98" fill="#00f0ff">R₁ = 30</text>
-                <text x="145" y="98" fill="#ff007f">R₂ = 28</text>
-              </svg>
-              <div class="text-[11px] font-mono text-slate-300">
-                Столкновение ЕСТЬ, если: <span class="text-neon-yellow font-bold">d &lt; (R₁ + R₂)</span>
-              </div>
-            </div>
+  // Жесткое ограничение в пределах рамки
+  player.x = Math.max(25, Math.min(canvas.width - 25, player.x));
+}</code></pre>
+        </div>
+      </article>
 
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Функция проверки коллизии</span>
-                <button onclick="copySnippet('code-mod5', 'btn-cp-m5')" id="btn-cp-m5" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod5" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-function checkCollision(obj1, obj2) {
-  const dx = obj1.x - obj2.x;
-  const dy = obj1.y - obj2.y;
-  // Math.hypot высчитывает гипотенузу: Math.sqrt(dx*dx + dy*dy)
-  const distance = Math.hypot(dx, dy);
-  return distance < (obj1.radius + obj2.radius);
-}</pre>
-            </div>
+      <!-- MODULE 4 -->
+      <article id="module-4" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">17-23 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 4: Процедурные астероиды в полярных координатах</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Наши астероиды — это НЕ банальные кружочки! Они процедурно строятся из 7–11 вершин через полярные координаты: $x = r \cdot \cos(\theta)$, $y = r \cdot \sin(\theta)$ с варьируемым радиусом.
+        </p>
 
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod5')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я освоил математику коллизий 2D кругов!</span>
-            </label>
+        <!-- SVG DIAGRAM: POLAR ASTEROID GENERATION -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+          <svg viewBox="0 0 300 180" class="w-full max-w-xs">
+            <!-- Asteroid shape -->
+            <polygon points="150,40 190,60 210,100 180,140 130,145 90,110 110,60" fill="#161e31" stroke="#8fa3bf" stroke-width="2"/>
+            <!-- Center point -->
+            <circle cx="150" cy="95" r="3" fill="#ff007f"/>
+            <!-- Polar vectors -->
+            <line x1="150" y1="95" x2="190" y2="60" stroke="#00f3ff" stroke-width="1.5" stroke-dasharray="2 2"/>
+            <text x="175" y="72" fill="#00f3ff" font-size="10">r(θ)</text>
+            <arc cx="150" cy="95" r="20" start-angle="0" end-angle="45" stroke="#ff007f"/>
+            <text x="175" y="98" fill="#ff007f" font-size="10">θ</text>
+          </svg>
+          <span class="text-xs text-slate-400 mt-2">Схема 4.1: Полярный метод построения нерегулярного многоугольника</span>
+        </div>
+
+        <!-- JS METHOD CARDS FOR MODULE 4 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">Math.cos(angle) & Math.sin(angle)</div>
+            <p><span class="text-slate-400">Как работает:</span> Возвращают косинус и синус угла в радианах.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `number` $[-1, 1]$.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Перевод полярных координат (угол + радиус) в декартовы координаты холста $(X, Y)$.</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.translate(x, y) & ctx.rotate(angle)</div>
+            <p><span class="text-slate-400">Как работает:</span> Сдвигают матрицу трансформации в центр астероида и поворачивают холст.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `undefined`.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Плавное естественное вращение каждого астероида вокруг собственной оси.</p>
           </div>
         </div>
 
-        <!-- МОДУЛЬ 6 -->
-        <div id="mod6-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod6')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">06</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 6: Визуальные эффекты: частицы и бонусы</h3>
-                <p class="text-[11px] text-slate-400 font-mono">28–33 мин • Класс Particle, globalAlpha и тряска экрана Screen Shake</p>
-              </div>
-            </div>
-            <span id="icon-mod6" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod6" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">class Particle</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">ctx.globalAlpha</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">Screen Shake Offset</span>
-            </div>
-
-            <p>
-              Взрывы создаются разлётом мелких частиц с затуханием прозрачности <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">globalAlpha</code>. Тряска экрана реализуется смещением всего холста на случайные значения <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">ctx.translate(shakeX, shakeY)</code> при получении урона.
-            </p>
-
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Система частиц и Тряска экрана</span>
-                <button onclick="copySnippet('code-mod6', 'btn-cp-m6')" id="btn-cp-m6" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod6" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-class Particle {
-  constructor(x, y, color) {
-    this.x = x;
-    this.y = y;
-    this.color = color;
-    this.radius = Math.random() * 3 + 1;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 5 + 1;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed;
-    this.alpha = 1;
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>function createAsteroid(x, y, radius) {
+  const pointsCount = 9;
+  const offset = [];
+  for (let i = 0; i < pointsCount; i++) {
+    offset.push(radius + (Math.random() * 12 - 6));
   }
+  return { x, y, radius, pointsCount, offset, angle: 0, rotSpeed: Math.random() * 0.04 - 0.02 };
+}
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.alpha -= 0.02; // Постепенное затухание
+function drawAsteroid(ast) {
+  ctx.save();
+  ctx.translate(ast.x, ast.y);
+  ctx.rotate(ast.angle);
+  ctx.beginPath();
+  for (let i = 0; i < ast.pointsCount; i++) {
+    const a = (i / ast.pointsCount) * Math.PI * 2;
+    const r = ast.offset[i];
+    const px = Math.cos(a) * r;
+    const py = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
   }
+  ctx.closePath();
+  ctx.fillStyle = '#161e31';
+  ctx.fill();
+  ctx.strokeStyle = '#8fa3bf';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}</code></pre>
+        </div>
+      </article>
 
-  draw(ctx) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, this.alpha);
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}</pre>
-            </div>
+      <!-- MODULE 5 -->
+      <article id="module-5" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">23-29 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 5: Стрельба, Коллизии и Раскалывание Астероидов</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Расчёт точности попаданий снарядов выполняется по формуле расстояния Евклида `Math.hypot()`. Крупные астероиды не пропадают бесследно, а разлетаются на 2 меньших осколка через `splice()` и `push()`.
+        </p>
 
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod6')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я научился создавать эффекты взрывов и сотрясение экрана!</span>
-            </label>
+        <!-- SVG DIAGRAM: COLLISION DISTANCE -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+          <svg viewBox="0 0 320 160" class="w-full max-w-xs">
+            <circle cx="90" cy="80" r="35" fill="#161e31" stroke="#8fa3bf" stroke-width="2"/>
+            <circle cx="210" cy="80" r="15" fill="#00f3ff" opacity="0.6"/>
+            <line x1="90" y1="80" x2="210" y2="80" stroke="#ff007f" stroke-width="2" stroke-dasharray="4 4"/>
+            <text x="115" y="70" fill="#ff007f" font-size="11" font-family="Orbitron">Math.hypot(dx, dy)</text>
+            <text x="75" y="130" fill="#8fa3bf" font-size="10">R1 = 35</text>
+            <text x="200" y="110" fill="#00f3ff" font-size="10">R2 = 15</text>
+          </svg>
+          <span class="text-xs text-slate-400 mt-2">Схема 5.1: Условие столкновения: hypot(dx, dy) < R1 + R2</span>
+        </div>
+
+        <!-- JS METHOD CARDS FOR MODULE 5 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">Math.hypot(dx, dy)</div>
+            <p><span class="text-slate-400">Как работает:</span> Вычисляет квадратный корень из суммы квадратов аргументов $\sqrt{dx^2 + dy^2}$.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> `number` (расстояние между объектами).</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Самая быстрая проверка пересечения окружностей астероидов и пуль.</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">Array.prototype.filter(predicate)</div>
+            <p><span class="text-slate-400">Как работает:</span> Фильтрует элементы массива, оставляя только вернувшие `true`.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Новый отфильтрованный массив.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Удаление вылетевших за рамки экрана лазеров и уничтоженных тел.</p>
           </div>
         </div>
 
-        <!-- МОДУЛЬ 7 -->
-        <div id="mod7-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod7')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">07</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 7: Синтез звука (Web Audio API) и Очки</h3>
-                <p class="text-[11px] text-slate-400 font-mono">33–37 мин • AudioContext, осцилляторы и запись рекорда в localStorage</p>
-              </div>
-            </div>
-            <span id="icon-mod7" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod7" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">new AudioContext()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">createOscillator()</span>
-              <span class="bg-cyan-950 text-neon-cyan px-2 py-0.5 rounded border border-cyan-800">localStorage.setItem()</span>
-            </div>
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>function checkCollisions() {
+  bullets.forEach((b, bIdx) => {
+    asteroids.forEach((ast, aIdx) => {
+      const dist = Math.hypot(b.x - ast.x, b.y - ast.y);
+      if (dist < ast.radius + 4) {
+        // Спавн 2 осколков, если астероид крупный
+        if (ast.radius > 20) {
+          asteroids.push(createAsteroid(ast.x - 10, ast.y, ast.radius / 2));
+          asteroids.push(createAsteroid(ast.x + 10, ast.y, ast.radius / 2));
+        }
+        asteroids.splice(aIdx, 1);
+        bullets.splice(bIdx, 1);
+        score += 100;
+      }
+    });
+  });
+}</code></pre>
+        </div>
+      </article>
 
-            <p>
-              Для максимальной производительности и независимости от внешних файл-ресурсов выстрелы и взрывы генерируются на лету через **Web Audio API** с помощью генераторов частот (<code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">OscillatorNode</code>). Рекорд сохраняется в браузере пользователя через <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">localStorage</code>.
-            </p>
+      <!-- MODULE 6 -->
+      <article id="module-6" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">29-34 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 6: Выпадающие Бонусы, Частицы и Screen Shake</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Из астероидов выпадают бонусы: **Тройной Лазер** (янтарная сфера) и **Ремонт Щита** (зелёная сфера). При попаданиях генерируются угасающие искры через `globalAlpha`, а при уроне экран сотрясается с помощью случайного смещения матрицы `ctx.translate`.
+        </p>
 
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <div class="bg-space-900 px-3 py-1.5 flex justify-between items-center border-b border-space-800">
-                <span class="text-[10px] font-mono text-slate-400">Синтез выстрела лазера и Сохранение</span>
-                <button onclick="copySnippet('code-mod7', 'btn-cp-m7')" id="btn-cp-m7" class="text-[10px] font-mono text-neon-cyan hover:underline">Скопировать</button>
-              </div>
-              <pre id="code-mod7" class="p-3 font-mono text-[11px] text-cyan-300 overflow-x-auto">
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        <!-- JS METHOD CARDS FOR MODULE 6 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
 
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">ctx.globalAlpha</div>
+            <p><span class="text-slate-400">Как работает:</span> Устанавливает степень прозрачности $[0.0, 1.0]$ для всех последующих графических вызовов.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Значение прозрачности.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Плавное растворение искр взрыва перед их полным удалением.</p>
+          </div>
+        </div>
+
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>// Эффект тряски экрана (Screen Shake)
+let shakeTime = 0;
+function triggerShake(duration = 10) { shakeTime = duration; }
+
+function applyScreenShake() {
+  if (shakeTime > 0) {
+    const offsetX = (Math.random() - 0.5) * 8;
+    const offsetY = (Math.random() - 0.5) * 8;
+    ctx.translate(offsetX, offsetY);
+    shakeTime--;
+  }
+}</code></pre>
+        </div>
+      </article>
+
+      <!-- MODULE 7 -->
+      <article id="module-7" class="mb-10 space-y-4 border-b border-slate-800/80 pb-8">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">34-38 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 7: Процедурный Звук Web Audio API и localStorage</h2>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Игра обходится без сторонних `.mp3` файлов! Звуки выстрелов и взрывов генерируются в реальном времени веб-синтезатором Web Audio API. Рекорды сохраняются в память браузера через `localStorage`.
+        </p>
+
+        <!-- JS METHOD CARDS FOR MODULE 7 -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-orbitron font-bold text-cyan-400 uppercase tracking-wider">Разбор методов JS:</h4>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">new AudioContext() & createOscillator()</div>
+            <p><span class="text-slate-400">Как работает:</span> Инициализирует узлы звукового графа браузера и генерирует звуковую волну задаваемой частоты.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Звуковой контекст и осциллятор.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Создание процедурного звука лазера без внешней загрузки файлов.</p>
+          </div>
+
+          <div class="method-card p-3 rounded-r-xl space-y-1 text-xs">
+            <div class="font-mono font-bold text-cyan-300">localStorage.setItem(key, val) / getItem(key)</div>
+            <p><span class="text-slate-400">Как работает:</span> Сохраняет и читает пары ключ-значение в энергонезависимой памяти браузера.</p>
+            <p><span class="text-slate-400">Что возвращает:</span> Строку или `null`.</p>
+            <p><span class="text-slate-400">Зачем в игре:</span> Сохранение наивысшего рекорда очков игрока даже после закрытия вкладки.</p>
+          </div>
+        </div>
+
+        <!-- CODE EXAMPLE -->
+        <div class="relative group">
+          <button onclick="copySnippet(this)" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition">Копировать</button>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-cyan-300"><code>// Процедурный синтез звука выстрела
 function playLaserSound() {
+  if (!soundEnabled) return;
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
+  
   osc.type = 'sawtooth';
-  
-  // Быстрое падение частоты от 800 Гц до 100 Гц (эффект пиу!)
   osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+  osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.12);
   
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
   
   osc.connect(gain);
   gain.connect(audioCtx.destination);
+  
   osc.start();
-  osc.stop(audioCtx.currentTime + 0.1);
-}
-
-// Запись рекорда
-function saveHighScore(newScore) {
-  const oldHigh = localStorage.getItem('star_defender_record') || 0;
-  if (newScore > oldHigh) {
-    localStorage.setItem('star_defender_record', newScore);
-  }
-}</pre>
-            </div>
-
-            <label class="flex items-center space-x-2 pt-1 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod7')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Я понял принцип программного синтеза звуков и работы с localStorage!</span>
-            </label>
-          </div>
+  osc.stop(audioCtx.currentTime + 0.12);
+}</code></pre>
         </div>
+      </article>
 
-        <!-- МОДУЛЬ 8 -->
-        <div id="mod8-anchor" class="bg-space-850 border border-space-700 rounded-2xl overflow-hidden transition">
-          <button onclick="toggleModule('mod8')" class="w-full p-4 text-left flex justify-between items-center bg-space-850 hover:bg-space-800 transition">
-            <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-neon-cyan font-mono text-xs flex items-center justify-center font-bold border border-cyan-500/30">08</span>
-              <div>
-                <h3 class="text-sm font-bold text-slate-100">Модуль 8: Состояния игры, HUD и финальная сборка</h3>
-                <p class="text-[11px] text-slate-400 font-mono">37–40 мин • Машина состояний (State Machine) и Шпаргалка по JS</p>
-              </div>
-            </div>
-            <span id="icon-mod8" class="text-slate-400 text-sm">▼</span>
-          </button>
-          
-          <div id="mod8" class="hidden p-5 border-t border-space-700 space-y-4 text-xs leading-relaxed text-slate-300">
-            <p>
-              Игра управляется конечным автоматом состояний (<code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">gameState = 'menu' | 'playing' | 'paused' | 'gameover'</code>). Это структурирует вызовы обновления и отрисовки оверлеев.
-            </p>
-
-            <!-- Шпаргалка Изученных JS Методов -->
-            <div class="space-y-2 pt-2">
-              <div class="font-mono text-xs text-neon-yellow font-bold">Сводная шпаргалка по использованным методам JS:</div>
-              <div class="overflow-x-auto rounded-xl border border-space-700">
-                <table class="w-full text-left font-mono text-[11px]">
-                  <thead class="bg-space-900 text-neon-cyan border-b border-space-700">
-                    <tr>
-                      <th class="p-2.5">Конструкция / Метод</th>
-                      <th class="p-2.5">Назначение в игре</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-space-800 bg-space-950 text-slate-300">
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">requestAnimationFrame</td>
-                      <td class="p-2.5">Плавный 60 FPS игровой цикл</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">Math.hypot(dx, dy)</td>
-                      <td class="p-2.5">Быстрое вычисление столкновений по радиусам</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">Array.prototype.filter</td>
-                      <td class="p-2.5">Очистка уничтоженных снарядов и частиц из памяти</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">Math.cos() / Math.sin()</td>
-                      <td class="p-2.5">Построение углов процедурных многоугольников</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">new Set()</td>
-                      <td class="p-2.5">Отслеживание одновременно зажатых клавиш</td>
-                    </tr>
-                    <tr>
-                      <td class="p-2.5 text-cyan-300">AudioContext</td>
-                      <td class="p-2.5">Программный синтез лазерных выстрелов и взрывов</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <label class="flex items-center space-x-2 pt-2 cursor-pointer">
-              <input type="checkbox" onchange="toggleModuleCheck('mod8')" class="rounded border-space-700 bg-space-950 text-neon-cyan focus:ring-0">
-              <span class="font-semibold text-slate-200">Поздравляем! Вы завершили весь 40-минутный теоретический курс!</span>
-            </label>
-          </div>
+      <!-- MODULE 8: FINAL ASSEMBLY & COMPLETE CODE TABS -->
+      <article id="module-8" class="space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-orbitron font-bold border border-cyan-500/30">38-40 МИН</span>
+          <h2 class="text-xl font-orbitron font-bold text-white">Модуль 8: Финальная Сборка и Готовый Код Проекта (1-в-1)</h2>
         </div>
-
-      </div>
-
-      <!-- 3. ФИНАЛЬНЫЙ СПЕЦИАЛЬНЫЙ БЛОК: СТРУКТУРА ПРОЕКТА И ИСХОДНЫЙ КОД ФАЙЛОВ -->
-      <div id="project-structure-section" class="bg-gradient-to-b from-space-850 to-space-900 border-2 border-purple-600/60 rounded-2xl p-5 sm:p-6 space-y-5 shadow-2xl">
-        
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-purple-600/30 text-neon-purple font-mono text-xl flex items-center justify-center font-bold border border-purple-500/50">
-            📁
-          </div>
-          <div>
-            <h2 class="font-orbitron font-extrabold text-lg text-white">
-              СТРУКТУРА ПРОЕКТА И ПОЛНЫЙ ИСХОДНЫЙ КОД
-            </h2>
-            <p class="text-xs text-slate-400 font-mono">Как запустить игру локально на своём компьютере</p>
-          </div>
-        </div>
-
-        <p class="text-xs text-slate-300 leading-relaxed">
-          Чтобы создать эту игру у себя на компьютере, создайте новую папку <code class="text-neon-cyan font-mono bg-space-950 px-1 py-0.5 rounded">star-defender</code> и разместите в ней 3 файла со следующей структурой:
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Ниже приведен **100% ПОЛНЫЙ ИСХОДНЫЙ КОД**, создающий точно такую же игру, как и на этой странице. Ученик может скопировать эти 3 файла в одну папку `star-defender/` и запустить в браузере!
         </p>
 
-        <!-- Визуальное Дерево Папок -->
-        <div class="bg-space-950 p-4 rounded-xl border border-purple-500/30 font-mono text-xs text-cyan-300 leading-relaxed space-y-1">
-          <div class="text-neon-purple font-bold">star-defender/</div>
-          <div>├── 📄 index.html <span class="text-slate-500">// Структура Canvas, HUD и модальные окна</span></div>
-          <div>├── 🎨 style.css  <span class="text-slate-500">// Космические стили и оформление UI</span></div>
-          <div>└── ⚡ game.js     <span class="text-slate-500">// Игровой движок, физика, звуки и классы</span></div>
+        <!-- FILE TREE SCHEME -->
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-slate-300">
+          <div class="text-cyan-400 font-bold mb-1">📁 star-defender/</div>
+          <div class="pl-4">├── 📄 index.html  <span class="text-slate-500">(Разметка и HUD)</span></div>
+          <div class="pl-4">├── 📄 style.css   <span class="text-slate-500">(Неоновые стили и обёртка)</span></div>
+          <div class="pl-4">└── 📄 game.js      <span class="text-slate-500">(Полный движок игры)</span></div>
         </div>
 
-        <!-- Пошаговая инструкция запуска -->
-        <div class="space-y-2 text-xs">
-          <div class="font-bold text-slate-200">Пошаговая инструкция для запуска:</div>
-          <ol class="list-decimal list-inside space-y-1 text-slate-400 font-mono text-[11px]">
-            <li>Создайте папку <code class="text-cyan-400">star-defender</code> на рабочем столе.</li>
-            <li>Создайте 3 файла: <code class="text-cyan-400">index.html</code>, <code class="text-cyan-400">style.css</code> и <code class="text-cyan-400">game.js</code>.</li>
-            <li>Скопируйте полный готовый код из вкладок ниже в соответствующие файлы.</li>
-            <li>Двойным кликом откройте <code class="text-cyan-400">index.html</code> в любом браузере!</li>
-          </ol>
-        </div>
-
-        <!-- ВКЛАДКИ ИСХОДНЫХ ФАЙЛОВ -->
-        <div class="space-y-3">
-          <!-- Кнопки выбора файлов -->
-          <div class="flex space-x-2 border-b border-space-700 pb-2">
-            <button id="tab-btn-html" onclick="switchFileTab('html')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition bg-purple-600 text-white shadow">
-              index.html
+        <!-- CODE TABS -->
+        <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+          <!-- Tab Headers -->
+          <div class="flex border-b border-slate-800 bg-slate-900/80 text-xs">
+            <button onclick="openTab('tab-html', this)" class="tab-btn active px-4 py-2.5 border-r border-slate-800 flex items-center gap-2">
+              <i class="fa-brands fa-html5 text-orange-500"></i> index.html
             </button>
-            <button id="tab-btn-css" onclick="switchFileTab('css')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition bg-space-800 text-slate-400 hover:text-white">
-              style.css
+            <button onclick="openTab('tab-css', this)" class="tab-btn px-4 py-2.5 border-r border-slate-800 text-slate-400 flex items-center gap-2">
+              <i class="fa-brands fa-css3-alt text-blue-500"></i> style.css
             </button>
-            <button id="tab-btn-js" onclick="switchFileTab('js')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition bg-space-800 text-slate-400 hover:text-white">
-              game.js
+            <button onclick="openTab('tab-js', this)" class="tab-btn px-4 py-2.5 text-slate-400 flex items-center gap-2">
+              <i class="fa-brands fa-js text-yellow-400"></i> game.js
             </button>
           </div>
 
-          <!-- СОДЕРЖИМОЕ ФАЙЛА INDEX.HTML -->
-          <div id="file-tab-html" class="space-y-2">
-            <div class="flex justify-between items-center text-xs font-mono">
-              <span class="text-slate-400">Файл 1 из 3: index.html</span>
-              <button onclick="copySnippet('full-code-html', 'btn-cp-full-html')" id="btn-cp-full-html" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition font-bold">
-                📋 Скопировать index.html
-              </button>
-            </div>
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <pre id="full-code-html" class="p-4 font-mono text-[11px] text-cyan-300 max-h-96 overflow-y-auto custom-scrollbar">
-&lt;!DOCTYPE html&gt;
+          <!-- TAB CONTENT: INDEX.HTML -->
+          <div id="tab-html" class="tab-content p-4 relative group">
+            <button onclick="copyTabCode('code-html-content')" class="absolute right-4 top-4 px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition z-10">
+              Копировать index.html
+            </button>
+            <pre class="overflow-x-auto text-xs text-cyan-200"><code id="code-html-content">&lt;!DOCTYPE html&gt;
 &lt;html lang="ru"&gt;
 &lt;head&gt;
-  &lt;meta charset="UTF-8" /&gt;
-  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
-  &lt;title&gt;Звёздный Защитник&lt;/title&gt;
-  &lt;link rel="stylesheet" href="style.css" /&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;Звёздный Защитник — Игра&lt;/title&gt;
+  &lt;link rel="stylesheet" href="style.css"&gt;
 &lt;/head&gt;
 &lt;body&gt;
-
-  &lt;div class="game-container"&gt;
-    &lt;!-- Верхняя панель HUD --&gt;
+  &lt;div class="game-wrapper"&gt;
+    &lt;!-- HUD Оверлей --&gt;
     &lt;div class="hud"&gt;
-      &lt;div&gt;СЧЁТ: &lt;span id="score"&gt;0&lt;/span&gt;&lt;/div&gt;
-      &lt;div&gt;РЕКОРД: &lt;span id="highscore"&gt;0&lt;/span&gt;&lt;/div&gt;
-      &lt;div&gt;ЩИТ: &lt;span id="shield"&gt;100%&lt;/span&gt;&lt;/div&gt;
+      &lt;div class="hud-left"&gt;
+        &lt;div class="hud-card cyan-box"&gt;СЧЁТ: &lt;span id="score"&gt;0&lt;/span&gt;&lt;/div&gt;
+        &lt;div class="hud-card cyan-box shield-container"&gt;
+          &lt;span&gt;ЩИТ:&lt;/span&gt;
+          &lt;div class="shield-bg"&gt;&lt;div id="shield-bar"&gt;&lt;/div&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class="hud-card amber-box"&gt;ЛАЗЕР: &lt;span id="laser-mode"&gt;ОДИНАРНЫЙ&lt;/span&gt;&lt;/div&gt;
     &lt;/div&gt;
 
-    &lt;!-- Игровой Холст --&gt;
-    &lt;canvas id="gameCanvas" width="600" height="700"&gt;&lt;/canvas&gt;
+    &lt;canvas id="gameCanvas" width="560" height="740"&gt;&lt;/canvas&gt;
 
-    &lt;!-- Меню / Оверлей --&gt;
-    &lt;div id="overlay" class="overlay"&gt;
-      &lt;h1 id="overlay-title"&gt;ЗВЁЗДНЫЙ ЗАЩИТНИК&lt;/h1&gt;
-      &lt;p id="overlay-desc"&gt;Уничтожайте астероиды и защищайте сектор!&lt;/p&gt;
-      &lt;button id="start-btn" onclick="startGame()"&gt;НАЧАТЬ ИГРУ&lt;/button&gt;
+    &lt;!-- Стартовый экран --&gt;
+    &lt;div id="startScreen" class="overlay"&gt;
+      &lt;h1&gt;ЗВЁЗДНЫЙ ЗАЩИТНИК&lt;/h1&gt;
+      &lt;p&gt;Защитите сектор от процедурных астероидов!&lt;/p&gt;
+      &lt;button id="startBtn"&gt;НАЧАТЬ БОЙ&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Экран Game Over --&gt;
+    &lt;div id="gameOverScreen" class="overlay hidden"&gt;
+      &lt;h1 class="danger"&gt;КОРАБЛЬ УНИЧТОЖЕН&lt;/h1&gt;
+      &lt;p&gt;Ваш счёт: &lt;span id="finalScore"&gt;0&lt;/span&gt; | Рекорд: &lt;span id="finalRecord"&gt;0&lt;/span&gt;&lt;/p&gt;
+      &lt;button id="restartBtn"&gt;ПОВТОРИТЬ ПОПЫТКУ&lt;/button&gt;
     &lt;/div&gt;
   &lt;/div&gt;
-
   &lt;script src="game.js"&gt;&lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;</pre>
-            </div>
+&lt;/html&gt;</code></pre>
           </div>
 
-          <!-- СОДЕРЖИМОЕ ФАЙЛА STYLE.CSS -->
-          <div id="file-tab-css" class="hidden space-y-2">
-            <div class="flex justify-between items-center text-xs font-mono">
-              <span class="text-slate-400">Файл 2 из 3: style.css</span>
-              <button onclick="copySnippet('full-code-css', 'btn-cp-full-css')" id="btn-cp-full-css" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition font-bold">
-                📋 Скопировать style.css
-              </button>
-            </div>
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <pre id="full-code-css" class="p-4 font-mono text-[11px] text-cyan-300 max-h-96 overflow-y-auto custom-scrollbar">
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+          <!-- TAB CONTENT: STYLE.CSS -->
+          <div id="tab-css" class="tab-content p-4 relative group hidden">
+            <button onclick="copyTabCode('code-css-content')" class="absolute right-4 top-4 px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition z-10">
+              Копировать style.css
+            </button>
+            <pre class="overflow-x-auto text-xs text-cyan-200"><code id="code-css-content">* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background-color: #060913;
-  color: #ffffff;
+  background-color: #050814;
+  color: #fff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
 }
-
-.game-container {
+.game-wrapper {
   position: relative;
-  width: 600px;
-  max-width: 100%;
-  border: 2px solid #00f0ff;
+  width: 560px;
+  height: 740px;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+  border: 1px solid rgba(0, 243, 255, 0.4);
 }
-
-canvas {
+#gameCanvas {
+  background-color: #050814;
   display: block;
   width: 100%;
-  background: #03050c;
+  height: 100%;
 }
-
 .hud {
   position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
+  top: 16px; left: 16px; right: 16px;
   display: flex;
   justify-content: space-between;
-  font-family: monospace;
-  font-weight: bold;
-  color: #00f0ff;
-  z-index: 10;
   pointer-events: none;
+  z-index: 10;
 }
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(6, 9, 19, 0.92);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 20px;
-  z-index: 20;
-}
-
-.overlay h1 {
-  font-size: 32px;
-  color: #00f0ff;
-  margin-bottom: 10px;
-}
-
-.overlay p {
-  color: #94a3b8;
-  margin-bottom: 20px;
-}
-
-.overlay button {
-  padding: 12px 30px;
-  background: #00f0ff;
-  color: #060913;
-  border: none;
-  font-weight: bold;
+.hud-left { display: flex; flex-direction: column; gap: 8px; }
+.hud-card {
+  background: rgba(11, 15, 25, 0.85);
+  padding: 6px 14px;
   border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: transform 0.1s;
+  font-weight: bold;
+  font-size: 13px;
+  letter-spacing: 1px;
 }
-
-.overlay button:hover {
-  transform: scale(1.05);
-}</pre>
-            </div>
+.cyan-box {
+  border: 1px solid rgba(0, 243, 255, 0.6);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+  color: #00f3ff;
+}
+.amber-box {
+  border: 1px solid rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+.shield-container { display: flex; align-items: center; gap: 8px; }
+.shield-bg {
+  width: 120px; height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; border: 1px solid #334155;
+}
+#shield-bar {
+  width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.2s;
+}
+.overlay {
+  position: absolute; inset: 0; background: rgba(5, 8, 20, 0.92);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 16px; z-index: 20; text-align: center; padding: 20px;
+}
+.hidden { display: none !important; }
+button {
+  background: linear-gradient(90deg, #00f3ff, #0077ff); border: none; padding: 12px 28px;
+  border-radius: 8px; font-weight: 900; color: #050814; cursor: pointer; font-size: 14px;
+}
+button:hover { transform: scale(1.05); }</code></pre>
           </div>
 
-          <!-- СОДЕРЖИМОЕ ФАЙЛА GAME.JS -->
-          <div id="file-tab-js" class="hidden space-y-2">
-            <div class="flex justify-between items-center text-xs font-mono">
-              <span class="text-slate-400">Файл 3 из 3: game.js (Автономная полная логика)</span>
-              <button onclick="copySnippet('full-code-js', 'btn-cp-full-js')" id="btn-cp-full-js" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition font-bold">
-                📋 Скопировать game.js
-              </button>
-            </div>
-            <div class="bg-space-950 rounded-xl border border-space-700 overflow-hidden">
-              <pre id="full-code-js" class="p-4 font-mono text-[11px] text-cyan-300 max-h-96 overflow-y-auto custom-scrollbar">
-/* ==========================================================================
-   ИГРОВОЙ ДВИЖОК «ЗВЁЗДНЫЙ ЗАЩИТНИК» (VANILLA JS CANVAS)
-   ========================================================================== */
-
+          <!-- TAB CONTENT: GAME.JS -->
+          <div id="tab-js" class="tab-content p-4 relative group hidden">
+            <button onclick="copyTabCode('code-js-content')" class="absolute right-4 top-4 px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 transition z-10">
+              Копировать game.js
+            </button>
+            <pre class="overflow-x-auto text-xs text-cyan-200"><code id="code-js-content">// ПОЛНЫЙ ДВИЖОК ИГРЫ ЗВЁЗДНЫЙ ЗАЩИТНИК (1-В-1)
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let gameState = 'menu'; // 'menu', 'playing', 'gameover'
-let score = 0;
-let highScore = localStorage.getItem('star_defender_record') || 0;
-document.getElementById('highscore').textContent = highScore;
+let score = 0, shield = 100, laserMode = 'SINGLE', laserTimer = 0;
+let gameOver = false, isRunning = false;
+let shakeTime = 0;
 
-// Настройка звуков через Web Audio API
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(freq, duration, type = 'sine') {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
-}
-
-// Управление клавиатурой
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// Класс Корабля
-class Ship {
-  constructor() {
-    this.x = canvas.width / 2;
-    this.y = canvas.height - 60;
-    this.radius = 18;
-    this.speed = 7;
-    this.shield = 100;
-  }
-  update() {
-    if (keys['ArrowLeft'] || keys['KeyA']) this.x -= this.speed;
-    if (keys['ArrowRight'] || keys['KeyD']) this.x += this.speed;
-    this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
-  }
-  draw() {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.beginPath();
-    ctx.moveTo(0, -20);
-    ctx.lineTo(16, 18);
-    ctx.lineTo(-16, 18);
-    ctx.closePath();
-    ctx.strokeStyle = '#00f0ff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+// Звёздный параллакс
+const stars = Array.from({ length: 80 }, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  size: Math.random() * 2 + 0.5,
+  speed: Math.random() * 1.5 + 0.5
+}));
+
+// Корабль игрока
+const player = { x: canvas.width / 2, y: canvas.height - 60, speed: 6 };
+let bullets = [], asteroids = [], bonuses = [], particles = [];
+
+// Звуковой синтезатор Web Audio API
+function playSound(type) {
+  try {
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.connect(gain); gain.connect(actx.destination);
+    if (type === 'laser') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(750, actx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, actx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, actx.currentTime);
+      osc.start(); osc.stop(actx.currentTime + 0.1);
+    } else if (type === 'explode') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(120, actx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, actx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.2, actx.currentTime);
+      osc.start(); osc.stop(actx.currentTime + 0.2);
+    }
+  } catch(e) {}
+}
+
+function spawnAsteroid() {
+  const radius = Math.random() > 0.5 ? 35 : 20;
+  const points = 8 + Math.floor(Math.random() * 4);
+  const offset = [];
+  for(let i = 0; i < points; i++) offset.push(radius + (Math.random() * 10 - 5));
+  asteroids.push({
+    x: Math.random() * (canvas.width - 60) + 30,
+    y: -40, radius, points, offset,
+    speed: Math.random() * 2 + 1.5,
+    angle: 0, rotSpeed: Math.random() * 0.04 - 0.02
+  });
+}
+
+function shoot() {
+  playSound('laser');
+  if (laserMode === 'SINGLE') {
+    bullets.push({ x: player.x, y: player.y - 20, vx: 0, vy: -10 });
+  } else {
+    bullets.push({ x: player.x - 10, y: player.y - 15, vx: -2, vy: -10 });
+    bullets.push({ x: player.x, y: player.y - 20, vx: 0, vy: -10 });
+    bullets.push({ x: player.x + 10, y: player.y - 15, vx: 2, vy: -10 });
   }
 }
 
-// Классы снарядов и астероидов
-class Bullet {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.radius = 4;
-    this.speed = 12;
+let lastShot = 0;
+function update() {
+  if (!isRunning || gameOver) return;
+
+  // Игрок
+  if ((keys['ArrowLeft'] || keys['KeyA']) && player.x > 30) player.x -= player.speed;
+  if ((keys['ArrowRight'] || keys['KeyD']) && player.x < canvas.width - 30) player.x += player.speed;
+  
+  if (keys['Space'] && Date.now() - lastShot > 150) {
+    shoot(); lastShot = Date.now();
   }
-  update() { this.y -= this.speed; }
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff007f';
-    ctx.fill();
+
+  // Лазерный таймер
+  if (laserTimer > 0) {
+    laserTimer--;
+    if (laserTimer === 0) {
+      laserMode = 'SINGLE';
+      document.getElementById('hud-laser').innerText = 'ОДИНАРНЫЙ';
+    }
   }
-}
 
-class Asteroid {
-  constructor(x, y, radius = 30) {
-    this.x = x || Math.random() * (canvas.width - 60) + 30;
-    this.y = y || -40;
-    this.radius = radius;
-    this.speed = Math.random() * 2 + 1.5;
-  }
-  update() { this.y += this.speed; }
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-}
+  // Звёзды
+  stars.forEach(s => { s.y += s.speed; if (s.y > canvas.height) s.y = 0; });
 
-let player = new Ship();
-let bullets = [];
-let asteroids = [];
+  // Пули
+  bullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
+  bullets = bullets.filter(b => b.y > 0);
 
-function startGame() {
-  player = new Ship();
-  bullets = [];
-  asteroids = [];
-  score = 0;
-  gameState = 'playing';
-  document.getElementById('overlay').style.display = 'none';
-}
+  // Спавн астероидов
+  if (Math.random() < 0.025) spawnAsteroid();
 
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Обновление астероидов
+  asteroids.forEach(ast => {
+    ast.y += ast.speed;
+    ast.angle += ast.rotSpeed;
 
-  if (gameState === 'playing') {
-    player.update();
-    player.draw();
-
-    if (keys['Space']) {
-      if (!player.lastShoot || Date.now() - player.lastShoot > 200) {
-        bullets.push(new Bullet(player.x, player.y - 20));
-        playSound(600, 0.1, 'sawtooth');
-        player.lastShoot = Date.now();
+    // Столкновение с игроком
+    if (Math.hypot(ast.x - player.x, ast.y - player.y) < ast.radius + 15) {
+      shield -= 25;
+      shakeTime = 12;
+      playSound('explode');
+      ast.y = canvas.height + 100;
+      if (shield <= 0) {
+        gameOver = true;
+        document.getElementById('gameOverScreen').classList.remove('hidden');
       }
     }
+  });
 
-    if (Math.random() < 0.02) asteroids.push(new Asteroid());
-
-    bullets.forEach(b => { b.update(); b.draw(); });
-    asteroids.forEach(a => { a.update(); a.draw(); });
-
-    // Проверка столкновений
-    bullets.forEach((b, bi) => {
-      asteroids.forEach((a, ai) => {
-        if (Math.hypot(b.x - a.x, b.y - a.y) < b.radius + a.radius) {
-          bullets.splice(bi, 1);
-          asteroids.splice(ai, 1);
-          score += 10;
-          document.getElementById('score').textContent = score;
-          playSound(150, 0.2, 'square');
+  // Столкновения Пуля-Астероид
+  bullets.forEach((b, bIdx) => {
+    asteroids.forEach((ast, aIdx) => {
+      if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 4) {
+        playSound('explode');
+        // Шанс бонуса
+        if (Math.random() < 0.25) {
+          bonuses.push({ x: ast.x, y: ast.y, type: Math.random() > 0.5 ? 'TRIPLE' : 'SHIELD' });
         }
-      });
+        // Раскалывание
+        if (ast.radius > 25) {
+          asteroids.push({ ...ast, radius: 18, x: ast.x - 12, speed: ast.speed + 0.5 });
+          asteroids.push({ ...ast, radius: 18, x: ast.x + 12, speed: ast.speed + 0.5 });
+        }
+        asteroids.splice(aIdx, 1);
+        bullets.splice(bIdx, 1);
+        score += 100;
+      }
     });
+  });
 
-    bullets = bullets.filter(b => b.y > 0);
-    asteroids = asteroids.filter(a => a.y < canvas.height + 50);
-  }
+  // Бонусы
+  bonuses.forEach((bn, idx) => {
+    bn.y += 2;
+    if (Math.hypot(bn.x - player.x, bn.y - player.y) < 25) {
+      if (bn.type === 'TRIPLE') {
+        laserMode = 'ТРОЙНОЙ';
+        laserTimer = 300;
+        document.getElementById('hud-laser').innerText = 'ТРОЙНОЙ';
+      } else {
+        shield = Math.min(100, shield + 30);
+      }
+      bonuses.splice(idx, 1);
+    }
+  });
 
-  requestAnimationFrame(gameLoop);
+  // Обновление HUD
+  document.getElementById('hud-score').innerText = score;
+  document.getElementById('hud-shield-bar').style.width = shield + '%';
 }
 
-requestAnimationFrame(gameLoop);</pre>
-            </div>
+function render() {
+  ctx.save();
+  if (shakeTime > 0) {
+    ctx.translate((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+    shakeTime--;
+  }
+
+  ctx.fillStyle = '#050814';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Отрисовка звезд
+  ctx.fillStyle = '#ffffff';
+  stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
+
+  // Отрисовка пуль
+  ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff';
+  ctx.fillStyle = '#00f3ff';
+  bullets.forEach(b => ctx.fillRect(b.x - 2, b.y - 8, 4, 12));
+
+  // Отрисовка астероидов
+  ctx.shadowBlur = 0;
+  asteroids.forEach(ast => {
+    ctx.save();
+    ctx.translate(ast.x, ast.y);
+    ctx.rotate(ast.angle);
+    ctx.beginPath();
+    for (let i = 0; i < ast.points; i++) {
+      const a = (i / ast.points) * Math.PI * 2;
+      const r = ast.offset[i];
+      if (i === 0) ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
+      else ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#161e31'; ctx.fill();
+    ctx.strokeStyle = '#8fa3bf'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+  });
+
+  // Отрисовка бонусов
+  bonuses.forEach(bn => {
+    ctx.beginPath();
+    ctx.arc(bn.x, bn.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = bn.type === 'TRIPLE' ? '#f59e0b' : '#10b981';
+    ctx.fill();
+  });
+
+  // Отрисовка Корабля
+  ctx.save();
+  ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
+  ctx.beginPath();
+  ctx.moveTo(player.x, player.y - 22);
+  ctx.lineTo(player.x + 20, player.y + 18);
+  ctx.lineTo(player.x, player.y + 10);
+  ctx.lineTo(player.x - 20, player.y + 18);
+  ctx.closePath();
+  ctx.fillStyle = '#0b0f19'; ctx.fill();
+  ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Кокпит
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y - 4, 5, 10, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff'; ctx.fill();
+
+  // Пламя
+  ctx.shadowColor = '#ff007f';
+  ctx.beginPath();
+  ctx.moveTo(player.x - 6, player.y + 12);
+  ctx.lineTo(player.x, player.y + 22 + Math.random()*6);
+  ctx.lineTo(player.x + 6, player.y + 12);
+  ctx.fillStyle = '#ff007f'; ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('startBtn').onclick = () => {
+  document.getElementById('startScreen').classList.add('hidden');
+  isRunning = true;
+};
+requestAnimationFrame(loop);</code></pre>
           </div>
         </div>
-
-      </div>
+      </article>
 
     </section>
-
   </main>
 
-  <!-- ПОДВАЛ -->
-  <footer class="border-t border-space-700/60 bg-space-950 py-4 text-center text-xs text-slate-500 font-mono">
-    Звёздный Защитник • Полноценное интерактивное руководство по JavaScript Canvas • Чистый HTML5 & Vanilla JS
-  </footer>
-
-
-  <!-- ИГРОВОЙ ДВИЖОК И СКРИПТЫ СТРАНИЦЫ -->
   <script>
-    /* ==========================================================================
-       0. WEB AUDIO API SYNTHESIZER
-       ========================================================================== */
-    let audioCtx = null;
+    // SCRIPT FOR THE ENGINE RUNNING IN THE APP + MODE SWITCHING
     let soundEnabled = true;
-
-    function initAudio() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    }
-
-    function playSound(type) {
-      if (!soundEnabled || !audioCtx) return;
-      try {
-        const now = audioCtx.currentTime;
-        if (type === 'laser') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(850, now);
-          osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.1);
-        } else if (type === 'explosion') {
-          const bufferSize = audioCtx.sampleRate * 0.25;
-          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-          const noise = audioCtx.createBufferSource();
-          noise.buffer = buffer;
-          const filter = audioCtx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(600, now);
-          filter.frequency.exponentialRampToValueAtTime(40, now + 0.25);
-          const gain = audioCtx.createGain();
-          gain.gain.setValueAtTime(0.25, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-          noise.connect(filter);
-          filter.connect(gain);
-          gain.connect(audioCtx.destination);
-          noise.start(now);
-        } else if (type === 'powerup') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(440, now);
-          osc.frequency.setValueAtTime(660, now + 0.08);
-          osc.frequency.setValueAtTime(880, now + 0.16);
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.25);
-        } else if (type === 'hit') {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(160, now);
-          osc.frequency.linearRampToValueAtTime(40, now + 0.15);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now);
-          osc.stop(now + 0.15);
-        }
-      } catch (e) {
-        console.error("Ошибка аудио:", e);
-      }
-    }
-
     function toggleSound() {
       soundEnabled = !soundEnabled;
-      document.getElementById('sound-text').textContent = soundEnabled ? 'ЗВУК ВКЛ' : 'ВЫКЛ';
-      document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
-      if (soundEnabled) initAudio();
+      document.getElementById('sound-text').innerText = soundEnabled ? 'Звук: Вкл' : 'Звук: Выкл';
+      document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high text-cyan-400' : 'fa-solid fa-volume-xmark text-slate-500';
     }
 
-
-    /* ==========================================================================
-       1. CANVAS & ИГРОВЫЕ ПЕРЕМЕННЫЕ
-       ========================================================================== */
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    const hudScore = document.getElementById('hud-score');
-    const hudTopHighscore = document.getElementById('hud-top-highscore');
-    const hudShieldBar = document.getElementById('hud-shield-bar');
-    const hudCombo = document.getElementById('hud-combo');
-    const hudComboVal = document.getElementById('hud-combo-val');
-    const hudWeapon = document.getElementById('hud-weapon');
-
-    const overlay = document.getElementById('game-overlay');
-    const overlayTitle = document.getElementById('overlay-title');
-    const overlayDesc = document.getElementById('overlay-desc');
-    const overlayStats = document.getElementById('overlay-stats');
-    const finalScoreEl = document.getElementById('final-score');
-    const finalAsteroidsEl = document.getElementById('final-asteroids');
-    const finalHighscoreEl = document.getElementById('final-highscore');
-    const btnStart = document.getElementById('btn-start');
-
-    let gameState = 'menu'; // 'menu', 'playing', 'paused', 'gameover'
-    let score = 0;
-    let asteroidsDestroyed = 0;
-    let highScore = localStorage.getItem('star_defender_record') || 0;
-    hudTopHighscore.textContent = highScore;
-
-    let comboCount = 0;
-    let comboTimer = 0;
-    let screenShake = 0;
-    let lastTime = 0;
-    let spawnTimer = 0;
-    let spawnInterval = 1000;
-
-    const keys = { left: false, right: false, shoot: false };
-
-    /* ==========================================================================
-       2. ИГРОВЫЕ ОБЪЕКТЫ И КЛАССЫ
-       ========================================================================== */
-
-    // Звёздное небо
-    const stars = Array.from({ length: 90 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      size: Math.random() * 2 + 0.5,
-      speed: Math.random() * 1.5 + 0.3,
-      alpha: Math.random() * 0.8 + 0.2
-    }));
-
-    // Игрок
-    const player = {
-      x: canvas.width / 2,
-      y: canvas.height - 65,
-      width: 36,
-      height: 44,
-      radius: 18,
-      speed: 7,
-      maxShield: 100,
-      shield: 100,
-      shootCooldown: 0,
-      tripleShotTimer: 0,
-
-      reset() {
-        this.x = canvas.width / 2;
-        this.y = canvas.height - 65;
-        this.shield = this.maxShield;
-        this.shootCooldown = 0;
-        this.tripleShotTimer = 0;
-      },
-
-      update() {
-        if (keys.left) this.x -= this.speed;
-        if (keys.right) this.x += this.speed;
-
-        this.x = Math.max(this.radius + 5, Math.min(canvas.width - this.radius - 5, this.x));
-
-        if (this.shootCooldown > 0) this.shootCooldown--;
-        if (this.tripleShotTimer > 0) {
-          this.tripleShotTimer--;
-          if (this.tripleShotTimer === 0) {
-            hudWeapon.textContent = 'ЛАЗЕР: ОДИНАРНЫЙ';
-            hudWeapon.className = 'bg-space-950/90 backdrop-blur border border-amber-500/40 rounded-lg px-2.5 py-1 text-neon-yellow text-xs font-semibold';
-          }
-        }
-      },
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-
-        // Пламя двигателя
-        const flameHeight = Math.random() * 12 + 8;
-        ctx.beginPath();
-        ctx.moveTo(-7, this.height / 2 - 4);
-        ctx.lineTo(0, this.height / 2 + flameHeight);
-        ctx.lineTo(7, this.height / 2 - 4);
-        ctx.fillStyle = Math.random() > 0.5 ? '#ff007f' : '#00f0ff';
-        ctx.shadowColor = '#00f0ff';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-
-        // Корпус корабля
-        ctx.beginPath();
-        ctx.moveTo(0, -this.height / 2);
-        ctx.lineTo(this.width / 2, this.height / 2);
-        ctx.lineTo(this.width / 4, this.height / 3);
-        ctx.lineTo(-this.width / 4, this.height / 3);
-        ctx.lineTo(-this.width / 2, this.height / 2);
-        ctx.closePath();
-
-        ctx.fillStyle = '#060913';
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#00f0ff';
-        ctx.shadowBlur = 12;
-        ctx.fill();
-        ctx.stroke();
-
-        // Кабина
-        ctx.beginPath();
-        ctx.ellipse(0, -4, 4, 10, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-
-        ctx.restore();
-      }
-    };
-
-    let bullets = [];
-    let asteroids = [];
-    let particles = [];
-    let powerups = [];
-
-    class Bullet {
-      constructor(x, y, vx = 0, vy = -12) {
-        this.x = x;
-        this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-        this.radius = 4;
-        this.destroyed = false;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.y < -20 || this.x < -20 || this.x > canvas.width + 20) this.destroyed = true;
-      }
-      draw() {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#ff007f';
-        ctx.shadowColor = '#ff007f';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.restore();
-      }
+    function resetHighScore() {
+      localStorage.removeItem('star_defender_highscore');
+      document.getElementById('hud-score').innerText = '0';
+      alert('Рекорд очков успешно сброшен!');
     }
 
-    class Asteroid {
-      constructor(x, y, radius = 32, level = 3) {
-        this.x = x || Math.random() * (canvas.width - 60) + 30;
-        this.y = y || -40;
-        this.radius = radius;
-        this.level = level;
-        this.speed = (4 - level) * 1.2 + Math.random() * 1.5;
-        this.vx = (Math.random() - 0.5) * 1.5;
-        this.vy = this.speed;
-        this.rotation = Math.random() * Math.PI * 2;
-        this.rotSpeed = (Math.random() - 0.5) * 0.04;
-        this.destroyed = false;
+    // View Modes Switching
+    function switchViewMode(mode) {
+      const gamePane = document.getElementById('game-pane');
+      const guidePane = document.getElementById('guide-pane');
+      const btnSplit = document.getElementById('mode-split');
+      const btnGame = document.getElementById('mode-game');
+      const btnGuide = document.getElementById('mode-guide');
 
-        this.points = [];
-        const verts = 9;
-        for (let i = 0; i < verts; i++) {
-          const angle = (i / verts) * Math.PI * 2;
-          const offset = this.radius * (0.75 + Math.random() * 0.5);
-          this.points.push({ x: Math.cos(angle) * offset, y: Math.sin(angle) * offset });
-        }
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.rotation += this.rotSpeed;
-        if (this.y > canvas.height + 50) this.destroyed = true;
-      }
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-        ctx.beginPath();
-        ctx.moveTo(this.points[0].x, this.points[0].y);
-        for (let i = 1; i < this.points.length; i++) {
-          ctx.lineTo(this.points[i].x, this.points[i].y);
-        }
-        ctx.closePath();
-        ctx.fillStyle = '#12182d';
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 2;
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
-    class Particle {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        this.radius = Math.random() * 3 + 1;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 6 + 1;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.alpha = 1;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vx *= 0.95;
-        this.vy *= 0.95;
-        this.alpha -= 0.02;
-      }
-      draw() {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.alpha);
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    class Powerup {
-      constructor(x, y, type) {
-        this.x = x;
-        this.y = y;
-        this.type = type; // 'shield', 'triple'
-        this.radius = 12;
-        this.vy = 2;
-        this.destroyed = false;
-      }
-      update() {
-        this.y += this.vy;
-        if (this.y > canvas.height + 30) this.destroyed = true;
-      }
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.type === 'shield' ? 'rgba(0, 255, 102, 0.2)' : 'rgba(255, 183, 0, 0.2)';
-        ctx.strokeStyle = this.type === 'shield' ? '#00ff66' : '#ffb700';
-        ctx.lineWidth = 2;
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px Fira Code';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.type === 'shield' ? '🛡️' : '⚡', 0, 0);
-        ctx.restore();
-      }
-    }
-
-    /* ==========================================================================
-       3. ИГРОВАЯ ЛОГИКА И СТОЛКНОВЕНИЯ
-       ========================================================================== */
-
-    function fireLaser() {
-      if (player.shootCooldown > 0) return;
-      if (player.tripleShotTimer > 0) {
-        bullets.push(new Bullet(player.x, player.y - 15, 0, -12));
-        bullets.push(new Bullet(player.x - 10, player.y - 10, -3, -11));
-        bullets.push(new Bullet(player.x + 10, player.y - 10, 3, -11));
-        player.shootCooldown = 12;
-      } else {
-        bullets.push(new Bullet(player.x, player.y - 15, 0, -12));
-        player.shootCooldown = 14;
-      }
-      playSound('laser');
-    }
-
-    function createExplosion(x, y, color = '#ff007f', count = 15) {
-      for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
-    }
-
-    function checkCollisions() {
-      // 1. Пули - Астероиды
-      for (let b of bullets) {
-        if (b.destroyed) continue;
-        for (let a of asteroids) {
-          if (a.destroyed) continue;
-          if (Math.hypot(b.x - a.x, b.y - a.y) < b.radius + a.radius) {
-            b.destroyed = true;
-            a.destroyed = true;
-            createExplosion(a.x, a.y, a.level === 3 ? '#94a3b8' : '#00f0ff', 12);
-            playSound('explosion');
-
-            asteroidsDestroyed++;
-            comboCount++;
-            comboTimer = 120;
-            const pts = 10 * a.level * Math.min(comboCount, 5);
-            score += pts;
-            hudScore.textContent = score;
-
-            // Раскалывание на меньшие фрагменты
-            if (a.level > 1) {
-              asteroids.push(new Asteroid(a.x - 10, a.y, a.radius * 0.6, a.level - 1));
-              asteroids.push(new Asteroid(a.x + 10, a.y, a.radius * 0.6, a.level - 1));
-            }
-
-            // Шанс бонуса
-            if (Math.random() < 0.15) {
-              powerups.push(new Powerup(a.x, a.y, Math.random() > 0.5 ? 'shield' : 'triple'));
-            }
-            break;
-          }
-        }
-      }
-
-      // 2. Игрок - Астероиды
-      for (let a of asteroids) {
-        if (a.destroyed) continue;
-        if (Math.hypot(player.x - a.x, player.y - a.y) < player.radius + a.radius) {
-          a.destroyed = true;
-          createExplosion(a.x, a.y, '#ff007f', 20);
-          screenShake = 12;
-          playSound('hit');
-
-          player.shield -= 35;
-          hudShieldBar.style.width = `${Math.max(0, player.shield)}%`;
-          if (player.shield <= 0) gameOver();
-        }
-      }
-
-      // 3. Игрок - Бонусы
-      for (let p of powerups) {
-        if (p.destroyed) continue;
-        if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
-          p.destroyed = true;
-          playSound('powerup');
-          if (p.type === 'shield') {
-            player.shield = Math.min(player.maxShield, player.shield + 40);
-            hudShieldBar.style.width = `${player.shield}%`;
-          } else {
-            player.tripleShotTimer = 400;
-            hudWeapon.textContent = 'ЛАЗЕР: ТРОЙНОЙ ⚡';
-            hudWeapon.className = 'bg-space-950/90 backdrop-blur border border-amber-500/80 rounded-lg px-2.5 py-1 text-neon-yellow text-xs font-bold animate-pulse';
-          }
-        }
-      }
-    }
-
-    /* ==========================================================================
-       4. РЕНДЕР И ЦИКЛ ОБНОВЛЕНИЯ
-       ========================================================================== */
-
-    function updateGame(deltaTime) {
-      if (gameState !== 'playing') return;
-
-      if (keys.shoot) fireLaser();
-      player.update();
-
-      if (comboTimer > 0) {
-        comboTimer--;
-        hudCombo.style.opacity = '1';
-        hudComboVal.textContent = `${Math.min(comboCount, 5)}x`;
-      } else {
-        comboCount = 0;
-        hudCombo.style.opacity = '0';
-      }
-
-      stars.forEach(s => {
-        s.y += s.speed;
-        if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+      [btnSplit, btnGame, btnGuide].forEach(btn => {
+        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-2 transition-all';
       });
-
-      spawnTimer += deltaTime;
-      if (spawnTimer > spawnInterval) {
-        spawnTimer = 0;
-        spawnInterval = Math.max(350, 1000 - Math.floor(score / 50) * 40);
-        asteroids.push(new Asteroid());
-      }
-
-      asteroids.forEach(a => a.update());
-      asteroids = asteroids.filter(a => !a.destroyed);
-
-      bullets.forEach(b => b.update());
-      bullets = bullets.filter(b => !b.destroyed);
-
-      powerups.forEach(p => p.update());
-      powerups = powerups.filter(p => !p.destroyed);
-
-      particles.forEach(p => p.update());
-      particles = particles.filter(p => p.alpha > 0);
-
-      checkCollisions();
-    }
-
-    function renderGame() {
-      ctx.save();
-      if (screenShake > 0) {
-        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-        screenShake *= 0.9;
-        if (screenShake < 0.5) screenShake = 0;
-      }
-
-      ctx.fillStyle = '#060913';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      stars.forEach(s => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
-        ctx.fillRect(s.x, s.y, s.size, s.size);
-      });
-
-      powerups.forEach(p => p.draw());
-      bullets.forEach(b => b.draw());
-      asteroids.forEach(a => a.draw());
-      particles.forEach(p => p.draw());
-
-      if (gameState === 'playing' || gameState === 'paused') player.draw();
-      ctx.restore();
-    }
-
-    function gameLoop(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const deltaTime = timestamp - lastTime;
-      lastTime = timestamp;
-
-      updateGame(deltaTime);
-      renderGame();
-      requestAnimationFrame(gameLoop);
-    }
-    requestAnimationFrame(gameLoop);
-
-
-    /* ==========================================================================
-       5. УПРАВЛЕНИЕ ВВОДОМ И СОСТОЯНИЕМ
-       ========================================================================== */
-
-    window.addEventListener('keydown', (e) => {
-      initAudio();
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.shoot = true;
-      if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.shoot = false;
-    });
-
-    // Touch controls
-    const setupTouch = (id, key) => {
-      const btn = document.getElementById(id);
-      btn.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); keys[key] = true; });
-      btn.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; });
-      btn.addEventListener('mousedown', () => { initAudio(); keys[key] = true; });
-      btn.addEventListener('mouseup', () => { keys[key] = false; });
-    };
-    setupTouch('touch-left', 'left');
-    setupTouch('touch-right', 'right');
-    setupTouch('touch-fire', 'shoot');
-
-    function startGame() {
-      initAudio();
-      gameState = 'playing';
-      score = 0;
-      asteroidsDestroyed = 0;
-      hudScore.textContent = '0';
-      hudShieldBar.style.width = '100%';
-      hudCombo.style.opacity = '0';
-
-      player.reset();
-      bullets = [];
-      asteroids = [];
-      particles = [];
-      powerups = [];
-
-      overlay.classList.add('hidden');
-    }
-
-    function togglePause() {
-      if (gameState === 'playing') {
-        gameState = 'paused';
-        overlayTitle.textContent = 'ПАУЗА';
-        overlayDesc.textContent = 'Нажмите P или кнопка ниже, чтобы продолжить бой.';
-        btnStart.textContent = 'ПРОДОЛЖИТЬ';
-        overlayStats.classList.add('hidden');
-        overlay.classList.remove('hidden');
-      } else if (gameState === 'paused') {
-        gameState = 'playing';
-        overlay.classList.add('hidden');
-      }
-    }
-
-    function gameOver() {
-      gameState = 'gameover';
-      playSound('explosion');
-
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('star_defender_record', highScore);
-        hudTopHighscore.textContent = highScore;
-      }
-
-      overlayTitle.textContent = 'МИССИЯ ПРОВАЛЕНА';
-      overlayDesc.textContent = 'Ваш корабль был уничтожен астероидным потоком!';
-      finalScoreEl.textContent = score;
-      finalAsteroidsEl.textContent = asteroidsDestroyed;
-      finalHighscoreEl.textContent = highScore;
-
-      overlayStats.classList.remove('hidden');
-      btnStart.textContent = 'ИГРАТЬ СНОВА';
-      overlay.classList.remove('hidden');
-    }
-
-
-    /* ==========================================================================
-       6. ИНТЕРФЕЙС И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-       ========================================================================== */
-
-    function setViewMode(mode) {
-      const gameSec = document.getElementById('game-section');
-      const guideSec = document.getElementById('guide-section');
-      const tabSplit = document.getElementById('tab-split');
-      const tabArcade = document.getElementById('tab-arcade');
-      const tabGuide = document.getElementById('tab-guide');
-
-      const active = 'px-3 py-1.5 rounded-lg transition text-neon-cyan bg-space-700 border border-cyan-500/40';
-      const inactive = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
-
-      tabSplit.className = mode === 'split' ? active : inactive;
-      tabArcade.className = mode === 'arcade' ? active : inactive;
-      tabGuide.className = mode === 'guide' ? active : inactive;
 
       if (mode === 'split') {
-        gameSec.className = 'lg:col-span-6 flex flex-col items-center justify-center space-y-3';
-        guideSec.className = 'lg:col-span-6 space-y-5';
-      } else if (mode === 'arcade') {
-        gameSec.className = 'lg:col-span-12 flex flex-col items-center justify-center space-y-3';
-        guideSec.className = 'hidden';
+        gamePane.classList.remove('hidden');
+        gamePane.className = 'w-full lg:w-1/2 flex flex-col items-center justify-start transition-all duration-300';
+        guidePane.classList.remove('hidden');
+        guidePane.className = 'w-full lg:w-1/2 flex flex-col bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4 md:p-6 overflow-y-auto max-h-[calc(100vh-100px)]';
+        btnSplit.className = 'px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all bg-cyan-500 text-slate-950 font-bold';
+      } else if (mode === 'game') {
+        gamePane.classList.remove('hidden');
+        gamePane.className = 'w-full max-w-xl mx-auto flex flex-col items-center justify-start transition-all duration-300';
+        guidePane.classList.add('hidden');
+        btnGame.className = 'px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all bg-cyan-500 text-slate-950 font-bold';
       } else if (mode === 'guide') {
-        gameSec.className = 'hidden';
-        guideSec.className = 'lg:col-span-12 space-y-5';
+        gamePane.classList.add('hidden');
+        guidePane.classList.remove('hidden');
+        guidePane.className = 'w-full max-w-5xl mx-auto flex flex-col bg-slate-900/40 rounded-2xl border border-slate-800/80 p-4 md:p-6 overflow-y-auto max-h-[calc(100vh-100px)]';
+        btnGuide.className = 'px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all bg-cyan-500 text-slate-950 font-bold';
       }
     }
 
-    function toggleModule(id) {
-      const mod = document.getElementById(id);
-      const icon = document.getElementById(`icon-${id}`);
-      if (mod.classList.contains('hidden')) {
-        mod.classList.remove('hidden');
-        icon.textContent = '▲';
-      } else {
-        mod.classList.add('hidden');
-        icon.textContent = '▼';
-      }
+    // Code Snippet copying
+    function copySnippet(btn) {
+      const code = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = 'Скопировано!';
+      setTimeout(() => btn.innerText = 'Копировать', 2000);
     }
 
-    function openAndScroll(id) {
-      const mod = document.getElementById(id);
-      const icon = document.getElementById(`icon-${id}`);
-      if (mod && mod.classList.contains('hidden')) {
-        mod.classList.remove('hidden');
-        if (icon) icon.textContent = '▲';
-      }
+    function copyTabCode(elementId) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text);
+      alert('Код успешно скопирован в буфер обмена!');
     }
 
-    const moduleState = { mod1: false, mod2: false, mod3: false, mod4: false, mod5: false, mod6: false, mod7: false, mod8: false };
-    function toggleModuleCheck(id) {
-      moduleState[id] = !moduleState[id];
-      const completed = Object.values(moduleState).filter(Boolean).length;
-      const pct = Math.round((completed / 8) * 100);
-      document.getElementById('guide-progress-percent').textContent = `${pct}% Завершено`;
-      document.getElementById('guide-progress-bar').style.width = `${pct}%`;
+    function openTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.classList.add('text-slate-400');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      btn.classList.add('active');
+      btn.classList.remove('text-slate-400');
     }
 
-    function switchFileTab(tab) {
-      document.getElementById('file-tab-html').classList.toggle('hidden', tab !== 'html');
-      document.getElementById('file-tab-css').classList.toggle('hidden', tab !== 'css');
-      document.getElementById('file-tab-js').classList.toggle('hidden', tab !== 'js');
+    // LIVE EMBEDDED GAME ENGINE INITIALIZATION
+    const liveCanvas = document.getElementById('gameCanvas');
+    const liveCtx = liveCanvas.getContext('2d');
 
-      const activeBtn = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition bg-purple-600 text-white shadow';
-      const inactiveBtn = 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition bg-space-800 text-slate-400 hover:text-white';
+    let liveScore = 0, liveShield = 100, liveLaser = 'SINGLE', liveLaserTimer = 0;
+    let liveGameOver = false, liveRunning = false;
+    let liveShake = 0;
 
-      document.getElementById('tab-btn-html').className = tab === 'html' ? activeBtn : inactiveBtn;
-      document.getElementById('tab-btn-css').className = tab === 'css' ? activeBtn : inactiveBtn;
-      document.getElementById('tab-btn-js').className = tab === 'js' ? activeBtn : inactiveBtn;
+    const liveKeys = {};
+    window.addEventListener('keydown', e => liveKeys[e.code] = true);
+    window.addEventListener('keyup', e => liveKeys[e.code] = false);
+
+    // Touch events for mobile
+    const touchLeft = document.getElementById('touch-left');
+    const touchRight = document.getElementById('touch-right');
+    const touchFire = document.getElementById('touch-fire');
+
+    touchLeft.addEventListener('touchstart', (e) => { e.preventDefault(); liveKeys['ArrowLeft'] = true; });
+    touchLeft.addEventListener('touchend', (e) => { e.preventDefault(); liveKeys['ArrowLeft'] = false; });
+    touchRight.addEventListener('touchstart', (e) => { e.preventDefault(); liveKeys['ArrowRight'] = true; });
+    touchRight.addEventListener('touchend', (e) => { e.preventDefault(); liveKeys['ArrowRight'] = false; });
+    touchFire.addEventListener('touchstart', (e) => { e.preventDefault(); liveKeys['Space'] = true; });
+    touchFire.addEventListener('touchend', (e) => { e.preventDefault(); liveKeys['Space'] = false; });
+
+    const liveStars = Array.from({ length: 90 }, () => ({
+      x: Math.random() * liveCanvas.width,
+      y: Math.random() * liveCanvas.height,
+      size: Math.random() * 2 + 0.5,
+      speed: Math.random() * 1.5 + 0.5,
+      alpha: Math.random()
+    }));
+
+    const livePlayer = { x: liveCanvas.width / 2, y: liveCanvas.height - 65, speed: 6.5 };
+    let liveBullets = [], liveAsteroids = [], liveBonuses = [], liveParticles = [];
+
+    function startGame() {
+      liveScore = 0;
+      liveShield = 100;
+      liveLaser = 'SINGLE';
+      liveLaserTimer = 0;
+      liveGameOver = false;
+      liveRunning = true;
+      liveBullets = [];
+      liveAsteroids = [];
+      liveBonuses = [];
+      liveParticles = [];
+      livePlayer.x = liveCanvas.width / 2;
+
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('game-over-screen').classList.add('hidden');
+      document.getElementById('hud-score').innerText = '0';
+      document.getElementById('hud-shield-bar').style.width = '100%';
+      document.getElementById('hud-laser').innerText = 'ОДИНАРНЫЙ';
     }
 
-    // Рабочее копирование через временный textarea для полной совместимости с iframe
-    function copySnippet(elementId, buttonId) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      const textToCopy = el.innerText || el.textContent;
-
-      const textarea = document.createElement('textarea');
-      textarea.value = textToCopy;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-
+    function playSynthSound(type) {
+      if (!soundEnabled) return;
       try {
-        document.execCommand('copy');
-        const btn = document.getElementById(buttonId);
-        if (btn) {
-          const original = btn.innerHTML;
-          btn.innerHTML = '✓ Скопировано!';
-          btn.classList.add('bg-emerald-600', 'text-white');
-          setTimeout(() => {
-            btn.innerHTML = original;
-            btn.classList.remove('bg-emerald-600', 'text-white');
-          }, 2000);
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const actx = new AudioCtx();
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.connect(gain); gain.connect(actx.destination);
+
+        if (type === 'laser') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(800, actx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(180, actx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.12, actx.currentTime);
+          osc.start(); osc.stop(actx.currentTime + 0.1);
+        } else if (type === 'explode') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(140, actx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, actx.currentTime + 0.22);
+          gain.gain.setValueAtTime(0.18, actx.currentTime);
+          osc.start(); osc.stop(actx.currentTime + 0.22);
+        } else if (type === 'bonus') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, actx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(900, actx.currentTime + 0.18);
+          gain.gain.setValueAtTime(0.15, actx.currentTime);
+          osc.start(); osc.stop(actx.currentTime + 0.18);
         }
-      } catch (err) {
-        console.error('Не удалось скопировать:', err);
-      }
-      document.body.removeChild(textarea);
+      } catch(e){}
     }
+
+    function spawnLiveAsteroid() {
+      const radius = Math.random() > 0.45 ? 36 : 22;
+      const points = 8 + Math.floor(Math.random() * 4);
+      const offset = [];
+      for(let i = 0; i < points; i++) offset.push(radius + (Math.random() * 12 - 6));
+      liveAsteroids.push({
+        x: Math.random() * (liveCanvas.width - 80) + 40,
+        y: -50, radius, points, offset,
+        speed: Math.random() * 2.2 + 1.6,
+        angle: 0, rotSpeed: Math.random() * 0.04 - 0.02
+      });
+    }
+
+    let lastLiveShot = 0;
+    function shootLive() {
+      playSynthSound('laser');
+      if (liveLaser === 'SINGLE') {
+        liveBullets.push({ x: livePlayer.x, y: livePlayer.y - 24, vx: 0, vy: -11 });
+      } else {
+        liveBullets.push({ x: livePlayer.x - 12, y: livePlayer.y - 18, vx: -2.2, vy: -10 });
+        liveBullets.push({ x: livePlayer.x, y: livePlayer.y - 24, vx: 0, vy: -11 });
+        liveBullets.push({ x: livePlayer.x + 12, y: livePlayer.y - 18, vx: 2.2, vy: -10 });
+      }
+    }
+
+    function updateLive() {
+      if (!liveRunning || liveGameOver) return;
+
+      if ((liveKeys['ArrowLeft'] || liveKeys['KeyA']) && livePlayer.x > 30) livePlayer.x -= livePlayer.speed;
+      if ((liveKeys['ArrowRight'] || liveKeys['KeyD']) && livePlayer.x < liveCanvas.width - 30) livePlayer.x += livePlayer.speed;
+      
+      if (liveKeys['Space'] && Date.now() - lastLiveShot > 140) {
+        shootLive(); lastLiveShot = Date.now();
+      }
+
+      if (liveLaserTimer > 0) {
+        liveLaserTimer--;
+        if (liveLaserTimer === 0) {
+          liveLaser = 'SINGLE';
+          document.getElementById('hud-laser').innerText = 'ОДИНАРНЫЙ';
+        }
+      }
+
+      // Stars
+      liveStars.forEach(s => { s.y += s.speed; if (s.y > liveCanvas.height) s.y = 0; });
+
+      // Bullets
+      liveBullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
+      liveBullets = liveBullets.filter(b => b.y > 0);
+
+      // Asteroids
+      if (Math.random() < 0.028) spawnLiveAsteroid();
+
+      liveAsteroids.forEach(ast => {
+        ast.y += ast.speed;
+        ast.angle += ast.rotSpeed;
+
+        if (Math.hypot(ast.x - livePlayer.x, ast.y - livePlayer.y) < ast.radius + 16) {
+          liveShield -= 25;
+          liveShake = 14;
+          playSynthSound('explode');
+          ast.y = liveCanvas.height + 100;
+          if (liveShield <= 0) {
+            liveShield = 0;
+            liveGameOver = true;
+            const rec = Math.max(liveScore, parseInt(localStorage.getItem('star_defender_highscore') || '0'));
+            localStorage.setItem('star_defender_highscore', rec);
+            document.getElementById('final-score').innerText = liveScore;
+            document.getElementById('final-record').innerText = rec;
+            document.getElementById('game-over-screen').classList.remove('hidden');
+          }
+        }
+      });
+
+      // Bullets-Asteroids
+      liveBullets.forEach((b, bIdx) => {
+        liveAsteroids.forEach((ast, aIdx) => {
+          if (Math.hypot(b.x - ast.x, b.y - ast.y) < ast.radius + 5) {
+            playSynthSound('explode');
+            
+            // Particles
+            for(let i=0; i<8; i++) {
+              liveParticles.push({
+                x: ast.x, y: ast.y,
+                vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6,
+                life: 1, color: '#8fa3bf'
+              });
+            }
+
+            if (Math.random() < 0.28) {
+              liveBonuses.push({ x: ast.x, y: ast.y, type: Math.random() > 0.5 ? 'TRIPLE' : 'SHIELD' });
+            }
+
+            if (ast.radius > 26) {
+              liveAsteroids.push({ ...ast, radius: 18, x: ast.x - 14, speed: ast.speed + 0.6 });
+              liveAsteroids.push({ ...ast, radius: 18, x: ast.x + 14, speed: ast.speed + 0.6 });
+            }
+
+            liveAsteroids.splice(aIdx, 1);
+            liveBullets.splice(bIdx, 1);
+            liveScore += 100;
+          }
+        });
+      });
+
+      // Particles Update
+      liveParticles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; });
+      liveParticles = liveParticles.filter(p => p.life > 0);
+
+      // Bonuses
+      liveBonuses.forEach((bn, idx) => {
+        bn.y += 2.2;
+        if (Math.hypot(bn.x - livePlayer.x, bn.y - livePlayer.y) < 26) {
+          playSynthSound('bonus');
+          if (bn.type === 'TRIPLE') {
+            liveLaser = 'ТРОЙНОЙ';
+            liveLaserTimer = 320;
+            document.getElementById('hud-laser').innerText = 'ТРОЙНОЙ';
+          } else {
+            liveShield = Math.min(100, liveShield + 30);
+          }
+          liveBonuses.splice(idx, 1);
+        }
+      });
+
+      // HUD Update
+      document.getElementById('hud-score').innerText = liveScore;
+      document.getElementById('hud-shield-bar').style.width = liveShield + '%';
+    }
+
+    function renderLive() {
+      liveCtx.save();
+      if (liveShake > 0) {
+        liveCtx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+        liveShake--;
+      }
+
+      liveCtx.fillStyle = '#050814';
+      liveCtx.fillRect(0, 0, liveCanvas.width, liveCanvas.height);
+
+      // Stars
+      liveStars.forEach(s => {
+        liveCtx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+        liveCtx.fillRect(s.x, s.y, s.size, s.size);
+      });
+
+      // Particles
+      liveParticles.forEach(p => {
+        liveCtx.globalAlpha = p.life;
+        liveCtx.fillStyle = p.color;
+        liveCtx.fillRect(p.x, p.y, 3, 3);
+      });
+      liveCtx.globalAlpha = 1.0;
+
+      // Bullets
+      liveCtx.shadowBlur = 12; liveCtx.shadowColor = '#00f3ff';
+      liveCtx.fillStyle = '#00f3ff';
+      liveBullets.forEach(b => liveCtx.fillRect(b.x - 2, b.y - 10, 4, 14));
+
+      // Asteroids
+      liveCtx.shadowBlur = 0;
+      liveAsteroids.forEach(ast => {
+        liveCtx.save();
+        liveCtx.translate(ast.x, ast.y);
+        liveCtx.rotate(ast.angle);
+        liveCtx.beginPath();
+        for (let i = 0; i < ast.points; i++) {
+          const a = (i / ast.points) * Math.PI * 2;
+          const r = ast.offset[i];
+          if (i === 0) liveCtx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
+          else liveCtx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+        }
+        liveCtx.closePath();
+        liveCtx.fillStyle = '#161e31'; liveCtx.fill();
+        liveCtx.strokeStyle = '#8fa3bf'; liveCtx.lineWidth = 2; liveCtx.stroke();
+        liveCtx.restore();
+      });
+
+      // Bonuses
+      liveBonuses.forEach(bn => {
+        liveCtx.save();
+        liveCtx.shadowBlur = 10;
+        liveCtx.shadowColor = bn.type === 'TRIPLE' ? '#f59e0b' : '#10b981';
+        liveCtx.beginPath();
+        liveCtx.arc(bn.x, bn.y, 11, 0, Math.PI * 2);
+        liveCtx.fillStyle = bn.type === 'TRIPLE' ? '#f59e0b' : '#10b981';
+        liveCtx.fill();
+        liveCtx.restore();
+      });
+
+      // Player Ship
+      liveCtx.save();
+      liveCtx.shadowBlur = 16; liveCtx.shadowColor = '#00f3ff';
+      liveCtx.beginPath();
+      liveCtx.moveTo(livePlayer.x, livePlayer.y - 24);
+      liveCtx.lineTo(livePlayer.x + 22, livePlayer.y + 18);
+      liveCtx.lineTo(livePlayer.x, livePlayer.y + 10);
+      liveCtx.lineTo(livePlayer.x - 22, livePlayer.y + 18);
+      liveCtx.closePath();
+      liveCtx.fillStyle = '#0b0f19'; liveCtx.fill();
+      liveCtx.strokeStyle = '#00f3ff'; liveCtx.lineWidth = 2.5; liveCtx.stroke();
+
+      // Cockpit
+      liveCtx.beginPath();
+      liveCtx.ellipse(livePlayer.x, livePlayer.y - 4, 6, 12, 0, 0, Math.PI * 2);
+      liveCtx.fillStyle = '#ffffff'; liveCtx.fill();
+
+      // Flame
+      liveCtx.shadowColor = '#ff007f';
+      liveCtx.beginPath();
+      liveCtx.moveTo(livePlayer.x - 6, livePlayer.y + 12);
+      liveCtx.lineTo(livePlayer.x, livePlayer.y + 24 + Math.random()*7);
+      liveCtx.lineTo(livePlayer.x + 6, livePlayer.y + 12);
+      liveCtx.fillStyle = '#ff007f'; liveCtx.fill();
+      liveCtx.restore();
+
+      liveCtx.restore();
+    }
+
+    function liveGameLoop() {
+      updateLive();
+      renderLive();
+      requestAnimationFrame(liveGameLoop);
+    }
+    requestAnimationFrame(liveGameLoop);
   </script>
 </body>
 </html>
